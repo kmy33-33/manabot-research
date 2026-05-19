@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ManaBot — SIGNAL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #080b0f;
+      --bg2:         #0d1117;
+      --bg3:         #111820;
+      --border:      #1a2332;
+      --border2:     #243040;
+      --green:       #00ff88;
+      --green-dim:   #00cc66;
+      --green-glow:  rgba(0,255,136,0.12);
+      --green-glow2: rgba(0,255,136,0.06);
+      --red:         #ff4466;
+      --red-dim:     #cc2244;
+      --amber:       #ffaa00;
+      --amber-dim:   #cc8800;
+      --blue:        #4a9eff;
+      --blue-dim:    #2277cc;
+      --purple:      #aa88ff;
+      --cyan:        #00ddff;
+      --text:        #c8d8e8;
+      --text-dim:    #6a8aaa;
+      --text-faint:  #3a5060;
+      --font:        'Share Tech Mono', 'Courier New', monospace;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    a { color: var(--green); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Scrollbar ──────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    /* ── Top Nav ────────────────────────────────────────────────── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: 48px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 20px rgba(0,0,0,0.6);
+    }
+
+    .nav-logo {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 0 12px rgba(0,255,136,0.5);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2px;
+    }
+
+    .nav-links a {
+      padding: 5px 11px;
+      border-radius: 4px;
+      color: var(--text-dim);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+      background: var(--bg3);
+      text-decoration: none;
+    }
+
+    .nav-links a.active {
+      color: var(--green);
+      background: var(--green-glow2);
+      border-color: rgba(0,255,136,0.25);
+    }
+
+    .nav-status {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text-faint);
+    }
+    .dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+    .dot.warn { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+    .dot.dead { background: var(--red); }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 0;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    .main-col {
+      padding: 16px 16px 16px 20px;
+      border-right: 1px solid var(--border);
+      min-height: calc(100vh - 48px);
+    }
+
+    .side-col {
+      padding: 16px;
+      background: var(--bg);
+      min-height: calc(100vh - 48px);
+    }
+
+    /* ── Section Headers ────────────────────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .section-title span {
+      color: var(--green);
+      margin-right: 8px;
+    }
+
+    /* ── Session Banner ─────────────────────────────────────────── */
+    .session-banner {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .session-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .session-name {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+
+    .session-character {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.6;
+      margin-bottom: 6px;
+    }
+
+    .session-strategy {
+      font-size: 11px;
+      color: var(--green-dim);
+      line-height: 1.6;
+    }
+
+    .session-strategy::before {
+      content: "▶ STRATEGY: ";
+      color: var(--text-faint);
+    }
+
+    .session-meta {
+      text-align: right;
+    }
+
+    .session-hours {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    .session-countdown {
+      font-size: 11px;
+      color: var(--amber);
+    }
+
+    .session-best {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .session-best-label {
+      font-size: 10px;
+      color: var(--text-faint);
+      letter-spacing: 0.5px;
+      width: 100%;
+      margin-bottom: 2px;
+    }
+
+    .best-chip {
+      font-size: 9px;
+      padding: 2px 7px;
+      border-radius: 3px;
+      background: var(--green-glow2);
+      border: 1px solid rgba(0,255,136,0.2);
+      color: var(--green-dim);
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Market Environment Bar ─────────────────────────────────── */
+    .env-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .env-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+
+    .env-chip .env-label {
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+      font-size: 9px;
+      text-transform: uppercase;
+    }
+
+    .env-chip .env-value {
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .env-chip .env-value.green  { color: var(--green); }
+    .env-chip .env-value.red    { color: var(--red); }
+    .env-chip .env-value.amber  { color: var(--amber); }
+    .env-chip .env-value.blue   { color: var(--blue); }
+    .env-chip .env-value.dim    { color: var(--text-dim); }
+
+    /* ── Refresh Bar ─────────────────────────────────────────────── */
+    .refresh-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 0 2px;
+    }
+
+    .refresh-info {
+      font-size: 10px;
+      color: var(--text-faint);
+      letter-spacing: 0.5px;
+    }
+
+    .refresh-info span { color: var(--text-dim); }
+
+    .refresh-progress {
+      width: 120px;
+      height: 2px;
+      background: var(--border);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .refresh-bar-inner {
+      height: 100%;
+      background: var(--green);
+      border-radius: 1px;
+      animation: refill 30s linear infinite;
+    }
+
+    @keyframes refill {
+      from { width: 100%; }
+      to   { width: 0%; }
+    }
+
+    /* ── Signal Card ─────────────────────────────────────────────── */
+    .signal-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .signal-card:hover { border-color: var(--border2); }
+
+    .signal-card.direction-buy  { border-left: 3px solid var(--green); }
+    .signal-card.direction-sell { border-left: 3px solid var(--red); }
+    .signal-card.direction-neutral { border-left: 3px solid var(--text-faint); }
+
+    /* Card Header */
+    .card-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 16px 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .card-header:hover { background: rgba(255,255,255,0.01); }
+
+    .symbol-block {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .symbol {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text);
+    }
+
+    .category-tag {
+      font-size: 9px;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .card-badges {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .badge {
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 3px 9px;
+      border-radius: 3px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-buy  { background: rgba(0,255,136,0.12); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+    .badge-sell { background: rgba(255,68,102,0.12); color: var(--red);   border: 1px solid rgba(255,68,102,0.3); }
+    .badge-neutral { background: rgba(106,138,170,0.1); color: var(--text-dim); border: 1px solid var(--border); }
+
+    .badge-stage {
+      font-size: 10px;
+      padding: 3px 9px;
+      border-radius: 3px;
+      border: 1px solid var(--border2);
+      color: var(--text-dim);
+      background: var(--bg3);
+    }
+
+    .badge-stage.entry  { border-color: rgba(0,255,136,0.3); color: var(--green-dim); background: var(--green-glow2); }
+    .badge-stage.choch  { border-color: rgba(74,158,255,0.3); color: var(--blue); background: rgba(74,158,255,0.06); }
+    .badge-stage.bos    { border-color: rgba(170,136,255,0.3); color: var(--purple); background: rgba(170,136,255,0.06); }
+    .badge-stage.watch  { border-color: rgba(255,170,0,0.3); color: var(--amber); background: rgba(255,170,0,0.06); }
+    .badge-stage.accum  { border-color: rgba(0,221,255,0.3); color: var(--cyan); background: rgba(0,221,255,0.06); }
+    .badge-stage.none   { opacity: 0.5; }
+
+    .regime-badge {
+      font-size: 9px;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .regime-trending-up   { background: rgba(0,255,136,0.08); color: var(--green-dim);   border: 1px solid rgba(0,255,136,0.2); }
+    .regime-trending-down { background: rgba(255,68,102,0.08); color: var(--red);         border: 1px solid rgba(255,68,102,0.2); }
+    .regime-ranging       { background: rgba(255,170,0,0.08);  color: var(--amber);       border: 1px solid rgba(255,170,0,0.2); }
+    .regime-volatile      { background: rgba(255,68,102,0.12); color: var(--red);         border: 1px solid rgba(255,68,102,0.35); animation: flash 1.5s infinite; }
+    .regime-compressed    { background: rgba(74,158,255,0.08); color: var(--blue);        border: 1px solid rgba(74,158,255,0.2); }
+    .regime-unknown       { background: var(--bg3);            color: var(--text-faint);  border: 1px solid var(--border); }
+
+    @keyframes flash { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+    .card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .confidence-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
+    }
+
+    .confidence-number {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .conf-high   { color: var(--green); }
+    .conf-medium { color: var(--amber); }
+    .conf-low    { color: var(--text-dim); }
+
+    .confidence-label {
+      font-size: 9px;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .confidence-bar-outer {
+      width: 80px;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .confidence-bar-inner {
+      height: 100%;
+      border-radius: 2px;
+    }
+
+    .conf-bar-high   { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .conf-bar-medium { background: var(--amber); }
+    .conf-bar-low    { background: var(--text-faint); }
+
+    .expand-icon {
+      font-size: 14px;
+      color: var(--text-faint);
+      transition: transform 0.2s;
+    }
+
+    .signal-card.open .expand-icon { transform: rotate(180deg); }
+
+    /* Card Body (collapsible) */
+    .card-body {
+      display: none;
+      border-top: 1px solid var(--border);
+    }
+
+    .signal-card.open .card-body { display: block; }
+
+    /* Entry Levels Row */
+    .levels-row {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .level-cell {
+      flex: 1;
+      padding: 10px 16px;
+      border-right: 1px solid var(--border);
+    }
+
+    .level-cell:last-child { border-right: none; }
+
+    .level-label {
+      font-size: 9px;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .level-value {
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .level-value.entry { color: var(--text); }
+    .level-value.sl    { color: var(--red); }
+    .level-value.tp1   { color: var(--green-dim); }
+    .level-value.tp2   { color: var(--green); }
+    .level-value.rr    { color: var(--amber); }
+    .level-value.na    { color: var(--text-faint); }
+
+    /* Section within card body */
+    .card-section {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-section:last-child { border-bottom: none; }
+
+    .card-section-title {
+      font-size: 9px;
+      color: var(--text-faint);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    /* COT Row */
+    .cot-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cot-badge {
+      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 3px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      min-width: 70px;
+      text-align: center;
+    }
+
+    .cot-bullish { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.25); }
+    .cot-bearish { background: rgba(255,68,102,0.1); color: var(--red);   border: 1px solid rgba(255,68,102,0.25); }
+    .cot-neutral { background: var(--bg3);          color: var(--text-dim); border: 1px solid var(--border); }
+
+    .cot-bar-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .cot-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--text-faint);
+    }
+
+    .cot-bar-outer {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cot-bar-inner {
+      height: 100%;
+      border-radius: 3px;
+      position: absolute;
+      top: 0;
+    }
+
+    .cot-bar-long  { background: var(--green); left: 0; }
+    .cot-bar-short { background: var(--red);   right: 0; }
+
+    .cot-meta {
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    .cot-change-up   { color: var(--green-dim); }
+    .cot-change-down { color: var(--red); }
+
+    /* Correlations */
+    .corr-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .corr-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .corr-icon {
+      font-size: 11px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .corr-confirm { color: var(--green-dim); }
+    .corr-warn    { color: var(--amber); }
+
+    /* Macro */
+    .macro-text {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+
+    /* Think out loud */
+    .thinking-block {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--green-dim);
+      border-radius: 4px;
+      padding: 12px 14px;
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      font-style: italic;
+    }
+
+    .thinking-label {
+      font-style: normal;
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--green-dim);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .thinking-label::before {
+      content: "▌";
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+
+    /* Confluences */
+    .confluence-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .conf-chip {
+      font-size: 9px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+
+    /* Key Levels */
+    .levels-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .levels-table td {
+      padding: 4px 8px;
+      font-size: 11px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .levels-table tr:last-child td { border-bottom: none; }
+    .levels-table td:first-child { color: var(--text-faint); width: 40%; }
+    .levels-table td:last-child  { color: var(--text); font-weight: 600; }
+
+    .lvl-swept     { color: var(--red) !important; }
+    .lvl-zone      { color: var(--amber) !important; }
+    .lvl-target    { color: var(--green-dim) !important; }
+    .lvl-structure { color: var(--blue) !important; }
+    .lvl-support   { color: var(--green-dim) !important; }
+    .lvl-resistance{ color: var(--red) !important; }
+
+    /* ── Sidebar ─────────────────────────────────────────────────── */
+    .side-section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .side-section-header {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .side-section-header span { color: var(--green); }
+
+    .side-section-body { padding: 12px 14px; }
+
+    /* Portfolio Heat */
+    .heat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .heat-label { font-size: 11px; color: var(--text-dim); }
+    .heat-value { font-size: 12px; }
+
+    .heat-bar-outer {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .heat-bar-inner {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--green);
+    }
+
+    .heat-status {
+      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+
+    .status-safe   { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.25); }
+    .status-elevated { background: rgba(255,170,0,0.1); color: var(--amber); border: 1px solid rgba(255,170,0,0.25); }
+    .status-danger { background: rgba(255,68,102,0.1); color: var(--red);   border: 1px solid rgba(255,68,102,0.25); }
+
+    /* Currency Exposure Bars */
+    .exposure-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .exposure-ccy {
+      width: 28px;
+      font-size: 10px;
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .exposure-bar-wrap {
+      flex: 1;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .exposure-bar-pos { background: var(--green); height: 100%; position: absolute; left: 50%; top: 0; border-radius: 0 4px 4px 0; }
+    .exposure-bar-neg { background: var(--red);   height: 100%; position: absolute; right: 50%; top: 0; border-radius: 4px 0 0 4px; }
+
+    .exposure-pct {
+      width: 36px;
+      text-align: right;
+      font-size: 10px;
+    }
+
+    /* Next Events */
+    .event-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: flex-start;
+    }
+
+    .event-time {
+      font-size: 10px;
+      color: var(--text-faint);
+      flex-shrink: 0;
+      min-width: 70px;
+    }
+
+    .event-impact {
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .impact-high   { background: rgba(255,68,102,0.12); color: var(--red);   border: 1px solid rgba(255,68,102,0.25); }
+    .impact-medium { background: rgba(255,170,0,0.1);  color: var(--amber); border: 1px solid rgba(255,170,0,0.2); }
+    .impact-low    { background: var(--bg3);            color: var(--text-faint); border: 1px solid var(--border); }
+
+    .event-name {
+      font-size: 11px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .event-ccy {
+      font-size: 9px;
+      color: var(--text-faint);
+    }
+
+    /* CB Stance */
+    .cb-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cb-row:last-child { border-bottom: none; }
+
+    .cb-ccy {
+      font-size: 12px;
+      color: var(--text);
+      width: 32px;
+    }
+
+    .cb-bank {
+      font-size: 10px;
+      color: var(--text-dim);
+      flex: 1;
+      padding: 0 8px;
+    }
+
+    .cb-stance {
+      font-size: 9px;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+
+    .stance-hawkish { background: rgba(0,255,136,0.08); color: var(--green-dim); border: 1px solid rgba(0,255,136,0.2); }
+    .stance-dovish  { background: rgba(255,68,102,0.08); color: var(--red);      border: 1px solid rgba(255,68,102,0.2); }
+    .stance-neutral { background: var(--bg3);            color: var(--text-dim); border: 1px solid var(--border); }
+
+    /* DXY / VIX / Risk env chips */
+    .env-mini-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .env-mini {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 7px 10px;
+      text-align: center;
+    }
+
+    .env-mini-label {
+      font-size: 8px;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .env-mini-val {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .narrative-text {
+      font-size: 10px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+
+    /* ── Filter Bar ──────────────────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      font-family: var(--font);
+      font-size: 10px;
+      padding: 4px 12px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      color: var(--text-dim);
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-glow2);
+    }
+
+    /* ── Updated time ────────────────────────────────────────────── */
+    .update-time {
+      font-size: 10px;
+      color: var(--text-faint);
+    }
+
+    /* ── No signal card ──────────────────────────────────────────── */
+    .signal-card.no-setup .card-header { opacity: 0.5; }
+    .signal-card.no-setup:hover { opacity: 1; }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .main-col { border-right: none; padding: 12px; }
+      .side-col { border-top: 1px solid var(--border); padding: 12px; }
+      .nav-links a { padding: 5px 7px; font-size: 10px; }
+      .nav-status { display: none; }
+    }
+
+    @media (max-width: 600px) {
+      .levels-row { flex-wrap: wrap; }
+      .level-cell { min-width: 50%; border-bottom: 1px solid var(--border); }
+      .session-banner { grid-template-columns: 1fr; }
+      .session-meta { text-align: left; }
+      .env-bar { gap: 5px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     NAV BAR
+══════════════════════════════════════════════════════════════════ -->
+<nav class="nav">
+  <div class="nav-logo">MANABOT</div>
+
+  <div class="nav-links">
+    <a href="/">CMD</a>
+    <a href="/execute">TRADE</a>
+    <a href="/signal" class="active">SIGNAL</a>
+    <a href="/neural">NEURAL</a>
+    <a href="/vault">VAULT</a>
+    <a href="/debrief">DEBRIEF</a>
+    <a href="/pulse">PULSE</a>
+    <a href="/root">ROOT</a>
+  </div>
+
+  <div class="nav-status">
+    <div class="status-dot">
+      <div class="dot {% if account.mt5_connected %}live{% else %}dead{% endif %}"></div>
+      MT5
+    </div>
+    <div class="status-dot">
+      <div class="dot {% if account.claude_connected %}live{% else %}dead{% endif %}"></div>
+      CLAUDE
+    </div>
+    <div class="status-dot">
+      <div class="dot {% if account.telegram_connected %}live{% else %}dead{% endif %}"></div>
+      TG
+    </div>
+  </div>
+</nav>
+
+
+<div class="layout">
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN COLUMN
+══════════════════════════════════════════════════════════════════ -->
+<div class="main-col">
+
+  <!-- Session Banner -->
+  <div class="session-banner" id="session-banner">
+    <div>
+      <div class="session-label">Active Session</div>
+      <div class="session-name" id="session-name-display"
+           style="color: {{ session_info.colour }}">
+        {{ session_info.label }}
+      </div>
+      <div class="session-character" id="session-char">{{ session_info.character }}</div>
+      <div class="session-strategy" id="session-strat">{{ session_info.strategy }}</div>
+      <div class="session-best">
+        <div class="session-best-label">BEST MARKETS THIS SESSION:</div>
+        {% for sym in session_info.best_for %}
+        <span class="best-chip">{{ sym }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="session-meta">
+      <div class="session-hours">{{ session_info.hours }}</div>
+      <div class="session-countdown" id="countdown-display">
+        ~{{ session_mins_remaining }}m remaining
+      </div>
+    </div>
+  </div>
+
+  <!-- Market Environment Bar -->
+  <div class="env-bar">
+    <div class="env-chip">
+      <div>
+        <div class="env-label">DXY</div>
+        <div class="env-value {% if macro.dxy_trend == 'UP' %}red{% elif macro.dxy_trend == 'DOWN' %}green{% else %}dim{% endif %}">
+          {{ macro.dxy_level }} {{ macro.dxy_trend }}
+        </div>
+      </div>
+    </div>
+    <div class="env-chip">
+      <div>
+        <div class="env-label">VIX</div>
+        <div class="env-value {% if macro.vix_label == 'LOW' %}green{% elif macro.vix_label == 'HIGH' %}red{% else %}amber{% endif %}">
+          {{ macro.vix_level }} {{ macro.vix_label }}
+        </div>
+      </div>
+    </div>
+    <div class="env-chip">
+      <div>
+        <div class="env-label">Risk Environment</div>
+        <div class="env-value {% if macro.risk_environment == 'RISK_ON' %}green{% elif macro.risk_environment == 'RISK_OFF' %}red{% else %}amber{% endif %}">
+          {{ macro.risk_environment.replace('_', ' ') }}
+        </div>
+      </div>
+    </div>
+    <div class="env-chip">
+      <div>
+        <div class="env-label">Portfolio Heat</div>
+        <div class="env-value {% if portfolio_heat.status == 'SAFE' %}green{% elif portfolio_heat.status == 'ELEVATED' %}amber{% else %}red{% endif %}">
+          {{ portfolio_heat.total_risk_pct }}% / {{ portfolio_heat.max_allowed_pct }}%
+        </div>
+      </div>
+    </div>
+    <div class="env-chip">
+      <div>
+        <div class="env-label">Next Event</div>
+        <div class="env-value amber">{{ macro.next_events[0].time }} – {{ macro.next_events[0].event }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Refresh / Filter Bar -->
+  <div class="refresh-bar">
+    <div>
+      <div class="filter-bar" id="filter-bar">
+        <button class="filter-btn active" onclick="filterSignals('ALL',this)">ALL</button>
+        <button class="filter-btn" onclick="filterSignals('Forex',this)">FOREX</button>
+        <button class="filter-btn" onclick="filterSignals('Commodity',this)">COMMODITIES</button>
+        <button class="filter-btn" onclick="filterSignals('Index',this)">INDICES</button>
+        <button class="filter-btn" onclick="filterSignals('Crypto',this)">CRYPTO</button>
+        <button class="filter-btn" onclick="filterSignals('ACTIVE',this)">ACTIVE ONLY</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+      <div class="refresh-progress"><div class="refresh-bar-inner" id="refresh-bar-inner"></div></div>
+      <div class="update-time">Updated <span id="last-updated">{{ signals[0].updated if signals else '—' }}</span> · Next refresh in <span id="countdown-sec">30</span>s</div>
+    </div>
+  </div>
+
+  <!-- Signal Cards -->
+  <div id="signals-container">
+  {% for sig in signals %}
+
+  {% set dir_class = 'direction-buy' if sig.direction == 'BUY' else ('direction-sell' if sig.direction == 'SELL' else 'direction-neutral') %}
+  {% set no_setup = 'no-setup' if sig.stage == 'No Setup' else '' %}
+  {% set conf_class = 'conf-high' if sig.confidence >= 75 else ('conf-medium' if sig.confidence >= 55 else 'conf-low') %}
+  {% set bar_class  = 'conf-bar-high' if sig.confidence >= 75 else ('conf-bar-medium' if sig.confidence >= 55 else 'conf-bar-low') %}
+
+  {% set stage_class = '' %}
+  {% if 'Entry' in sig.stage %}{% set stage_class = 'entry' %}
+  {% elif 'CHoCH' in sig.stage %}{% set stage_class = 'choch' %}
+  {% elif 'BOS' in sig.stage %}{% set stage_class = 'bos' %}
+  {% elif 'Watch' in sig.stage %}{% set stage_class = 'watch' %}
+  {% elif 'Accum' in sig.stage %}{% set stage_class = 'accum' %}
+  {% elif 'No Setup' in sig.stage %}{% set stage_class = 'none' %}
+  {% endif %}
+
+  {% set regime_lower = sig.regime.lower().replace('_', '-') %}
+
+  <div class="signal-card {{ dir_class }} {{ no_setup }}"
+       id="card-{{ sig.symbol }}"
+       data-category="{{ sig.category }}"
+       data-direction="{{ sig.direction }}"
+       data-stage="{{ sig.stage }}">
+
+    <!-- Card Header (click to expand) -->
+    <div class="card-header" onclick="toggleCard('{{ sig.symbol }}')">
+      <div class="symbol-block">
+        <div class="symbol">{{ sig.symbol }}</div>
+        <div class="category-tag">{{ sig.category }}</div>
+      </div>
+
+      <div class="card-badges">
+        <!-- Direction -->
+        <span class="badge badge-{{ sig.direction.lower() }}">
+          {% if sig.direction == 'BUY' %}▲ LONG{% elif sig.direction == 'SELL' %}▼ SHORT{% else %}— NEUTRAL{% endif %}
+        </span>
+        <!-- Stage -->
+        <span class="badge badge-stage {{ stage_class }}">{{ sig.stage }}</span>
+        <!-- Regime -->
+        <span class="regime-badge regime-{{ regime_lower }}">
+          {% if sig.regime == 'TRENDING_UP' %}↑ TRENDING
+          {% elif sig.regime == 'TRENDING_DOWN' %}↓ TRENDING
+          {% elif sig.regime == 'RANGING' %}⇌ RANGING
+          {% elif sig.regime == 'VOLATILE' %}⚡ VOLATILE
+          {% elif sig.regime == 'COMPRESSED' %}◉ COMPRESSED
+          {% else %}? UNKNOWN{% endif %}
+        </span>
+        <!-- Session tag -->
+        <span class="regime-badge regime-unknown">{{ sig.session.replace('_',' ') }}</span>
+      </div>
+
+      <div class="card-right">
+        <div class="confidence-block">
+          <span class="confidence-number {{ conf_class }}">{{ sig.confidence }}%</span>
+          <span class="confidence-label">Confidence</span>
+          <div class="confidence-bar-outer">
+            <div class="confidence-bar-inner {{ bar_class }}" style="width:{{ sig.confidence }}%"></div>
+          </div>
+        </div>
+        <span class="expand-icon">▾</span>
+      </div>
+    </div>
+
+    <!-- Card Body -->
+    <div class="card-body">
+
+      <!-- Entry Levels Row -->
+      {% if sig.entry_price %}
+      <div class="levels-row">
+        <div class="level-cell">
+          <div class="level-label">Entry</div>
+          <div class="level-value entry">{{ "%.5f"|format(sig.entry_price) if sig.entry_price < 100 else "%.2f"|format(sig.entry_price) }}</div>
+        </div>
+        <div class="level-cell">
+          <div class="level-label">Stop Loss</div>
+          <div class="level-value sl">{{ "%.5f"|format(sig.sl_price) if sig.sl_price < 100 else "%.2f"|format(sig.sl_price) }}
+          {% if sig.sl_pips %}<span style="color:var(--text-faint);font-size:10px"> ({{ sig.sl_pips }}p)</span>{% endif %}
+          </div>
+        </div>
+        <div class="level-cell">
+          <div class="level-label">TP1</div>
+          <div class="level-value tp1">{{ "%.5f"|format(sig.tp1_price) if sig.tp1_price < 100 else "%.2f"|format(sig.tp1_price) }}</div>
+        </div>
+        <div class="level-cell">
+          <div class="level-label">TP2</div>
+          <div class="level-value tp2">{{ "%.5f"|format(sig.tp2_price) if sig.tp2_price < 100 else "%.2f"|format(sig.tp2_price) }}</div>
+        </div>
+        <div class="level-cell">
+          <div class="level-label">R:R Ratio</div>
+          <div class="level-value rr">{{ sig.rr_ratio }}</div>
+        </div>
+      </div>
+      {% else %}
+      <div class="card-section">
+        <div style="font-size:11px;color:var(--text-faint);text-align:center;padding:4px 0;">
+          No entry setup — monitoring only
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Think Out Loud -->
+      <div class="card-section">
+        <div class="thinking-label">ManaBot Reasoning</div>
+        <div class="thinking-block">{{ sig.think_out_loud }}</div>
+      </div>
+
+      <!-- COT Row -->
+      <div class="card-section">
+        <div class="card-section-title">COT — Commitment of Traders</div>
+        <div class="cot-row">
+          {% set cot_badge = 'cot-bullish' if sig.cot.signal == 'BULLISH' else ('cot-bearish' if sig.cot.signal == 'BEARISH' else 'cot-neutral') %}
+          <span class="cot-badge {{ cot_badge }}">{{ sig.cot.signal }}</span>
+          {% if sig.cot.net is not none %}
+          <div class="cot-bar-wrap">
+            <div class="cot-bar-labels">
+              <span>SHORT</span>
+              <span>LONG</span>
+            </div>
+            <div class="cot-bar-outer">
+              {% if sig.cot.net > 0 %}
+              <div class="cot-bar-inner cot-bar-long" style="width:{{ [sig.cot.net|abs / 1000, 50]|min }}%"></div>
+              {% else %}
+              <div class="cot-bar-inner cot-bar-short" style="width:{{ [sig.cot.net|abs / 1000, 50]|min }}%"></div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="cot-meta">
+            {{ sig.cot.label }}
+            {% if sig.cot.change %}
+            <span class="{{ 'cot-change-up' if sig.cot.change > 0 else 'cot-change-down' }}">
+              {{ '+' if sig.cot.change > 0 else '' }}{{ "{:,}".format(sig.cot.change) }} WoW
+            </span>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="cot-meta" style="color:var(--text-faint)">{{ sig.cot.label }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Correlations -->
+      <div class="card-section">
+        <div class="card-section-title">Correlation Signals</div>
+        <div class="corr-list">
+          {% for c in sig.correlations %}
+          <div class="corr-item">
+            <span class="corr-icon {{ 'corr-confirm' if c.type == 'confirm' else 'corr-warn' }}">
+              {{ '✓' if c.type == 'confirm' else '⚠' }}
+            </span>
+            <span style="color:{{ 'var(--text-dim)' if c.type == 'confirm' else 'var(--amber)' }}">
+              {{ c.text }}
+            </span>
+          </div>
+          {% endfor %}
+          {% if not sig.correlations %}
+          <div style="font-size:11px;color:var(--text-faint)">No correlation signals active</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Confluences -->
+      {% if sig.confluences %}
+      <div class="card-section">
+        <div class="card-section-title">Confluences ({{ sig.confluences|length }})</div>
+        <div class="confluence-chips">
+          {% for cf in sig.confluences %}
+          <span class="conf-chip">{{ cf }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Key Levels -->
+      {% if sig.key_levels %}
+      <div class="card-section">
+        <div class="card-section-title">Key Levels</div>
+        <table class="levels-table">
+          {% for lvl in sig.key_levels %}
+          <tr>
+            <td>{{ lvl.label }}</td>
+            <td class="lvl-{{ lvl.type }}">
+              {{ "%.5f"|format(lvl.price) if lvl.price < 100 else "%.2f"|format(lvl.price) }}
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+      {% endif %}
+
+      <!-- Macro -->
+      <div class="card-section">
+        <div class="card-section-title">Macro Context</div>
+        <div class="macro-text">{{ sig.macro }}</div>
+      </div>
+
+    </div><!-- /card-body -->
+  </div><!-- /signal-card -->
+  {% endfor %}
+  </div><!-- /signals-container -->
+
+</div><!-- /main-col -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SIDE COLUMN
+══════════════════════════════════════════════════════════════════ -->
+<div class="side-col">
+
+  <!-- Portfolio Heat -->
+  <div class="side-section">
+    <div class="side-section-header">
+      <span>◈</span> Portfolio Heat
+      <span class="heat-status status-{{ portfolio_heat.status.lower() }}">
+        {{ portfolio_heat.status }}
+      </span>
+    </div>
+    <div class="side-section-body">
+      <div class="heat-row">
+        <span class="heat-label">Total Risk Deployed</span>
+        <span class="heat-value" style="color:var(--green)">{{ portfolio_heat.total_risk_pct }}%</span>
+      </div>
+      <div class="heat-bar-outer">
+        <div class="heat-bar-inner" style="width:{{ (portfolio_heat.total_risk_pct / portfolio_heat.max_allowed_pct * 100)|int }}%;
+          background: {% if portfolio_heat.total_risk_pct < 4 %}var(--green){% elif portfolio_heat.total_risk_pct < 5 %}var(--amber){% else %}var(--red){% endif %};"></div>
+      </div>
+      <div class="heat-row" style="margin-top:4px;">
+        <span class="heat-label">Max Allowed</span>
+        <span class="heat-value" style="color:var(--text-dim)">{{ portfolio_heat.max_allowed_pct }}%</span>
+      </div>
+      <div class="heat-row">
+        <span class="heat-label">Open Positions</span>
+        <span class="heat-value" style="color:var(--text)">{{ portfolio_heat.trades_count }}</span>
+      </div>
+
+      <!-- Currency Exposures -->
+      <div style="margin-top:12px;">
+        <div class="card-section-title" style="margin-bottom:8px;">Currency Exposures</div>
+        {% if portfolio_heat.currency_exposures %}
+          {% for ccy, pct in portfolio_heat.currency_exposures.items() %}
+          <div class="exposure-row">
+            <span class="exposure-ccy">{{ ccy }}</span>
+            <div class="exposure-bar-wrap">
+              {% if pct > 0 %}
+              <div class="exposure-bar-pos" style="width:{{ [pct/6*50,50]|min }}%"></div>
+              {% elif pct < 0 %}
+              <div class="exposure-bar-neg" style="width:{{ [pct|abs/6*50,50]|min }}%"></div>
+              {% endif %}
+            </div>
+            <span class="exposure-pct" style="color:{% if pct > 0 %}var(--green){% elif pct < 0 %}var(--red){% else %}var(--text-faint){% endif %}">
+              {{ '+' if pct > 0 else '' }}{{ pct }}%
+            </span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="font-size:10px;color:var(--text-faint);text-align:center;padding:6px">No open positions</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Market Narrative -->
+  <div class="side-section">
+    <div class="side-section-header"><span>◈</span> Market Narrative</div>
+    <div class="side-section-body">
+      <div class="env-mini-row">
+        <div class="env-mini">
+          <div class="env-mini-label">DXY</div>
+          <div class="env-mini-val" style="color:{% if macro.dxy_trend == 'UP' %}var(--red){% elif macro.dxy_trend == 'DOWN' %}var(--green){% else %}var(--text-dim){% endif %}">
+            {{ macro.dxy_level }}<br><span style="font-size:9px">{{ macro.dxy_trend }}</span>
+          </div>
+        </div>
+        <div class="env-mini">
+          <div class="env-mini-label">VIX</div>
+          <div class="env-mini-val" style="color:{% if macro.vix_label == 'LOW' %}var(--green){% elif macro.vix_label == 'HIGH' %}var(--red){% else %}var(--amber){% endif %}">
+            {{ macro.vix_level }}<br><span style="font-size:9px">{{ macro.vix_label }}</span>
+          </div>
+        </div>
+        <div class="env-mini">
+          <div class="env-mini-label">Risk</div>
+          <div class="env-mini-val" style="color:{% if macro.risk_environment == 'RISK_ON' %}var(--green){% elif macro.risk_environment == 'RISK_OFF' %}var(--red){% else %}var(--amber){% endif %}">
+            {% if macro.risk_environment == 'RISK_ON' %}ON{% elif macro.risk_environment == 'RISK_OFF' %}OFF{% else %}MIX{% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="narrative-text">{{ macro.narrative }}</div>
+    </div>
+  </div>
+
+  <!-- Central Banks -->
+  <div class="side-section">
+    <div class="side-section-header"><span>◈</span> Central Bank Stances</div>
+    <div class="side-section-body" style="padding:8px 14px;">
+      {% for cb in macro.central_banks %}
+      {% set s = cb.stance.lower() %}
+      <div class="cb-row">
+        <div class="cb-ccy">{{ cb.currency }}</div>
+        <div class="cb-bank">{{ cb.bank }}</div>
+        <span class="cb-stance stance-{{ s }}">
+          {{ cb.action }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Upcoming Events -->
+  <div class="side-section">
+    <div class="side-section-header"><span>◈</span> Upcoming Events</div>
+    <div class="side-section-body">
+      {% for ev in macro.next_events %}
+      <div class="event-row">
+        <div class="event-time">{{ ev.time }}</div>
+        <span class="event-impact impact-{{ ev.impact.lower() }}">{{ ev.impact }}</span>
+        <div>
+          <div class="event-name">{{ ev.event }}</div>
+          <div class="event-ccy">{{ ev.currencies }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="side-section">
+    <div class="side-section-header"><span>◈</span> Signal Summary</div>
+    <div class="side-section-body">
+      {% set active_count = signals|selectattr('stage','ne','No Setup')|list|length %}
+      {% set entry_count  = signals|selectattr('stage','equalto','Entry Ready')|list|length %}
+      {% set buy_count    = signals|selectattr('direction','equalto','BUY')|list|length %}
+      {% set sell_count   = signals|selectattr('direction','equalto','SELL')|list|length %}
+      <div class="heat-row">
+        <span class="heat-label">Total Markets Tracked</span>
+        <span class="heat-value" style="color:var(--text)">{{ signals|length }}</span>
+      </div>
+      <div class="heat-row">
+        <span class="heat-label">Active Setups</span>
+        <span class="heat-value" style="color:var(--amber)">{{ active_count }}</span>
+      </div>
+      <div class="heat-row">
+        <span class="heat-label">Entry Ready</span>
+        <span class="heat-value" style="color:var(--green)">{{ entry_count }}</span>
+      </div>
+      <div class="heat-row">
+        <span class="heat-label">Long Signals</span>
+        <span class="heat-value" style="color:var(--green)">{{ buy_count }}</span>
+      </div>
+      <div class="heat-row">
+        <span class="heat-label">Short Signals</span>
+        <span class="heat-value" style="color:var(--red)">{{ sell_count }}</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /side-col -->
+</div><!-- /layout -->
+
+
+<script>
+// ── Card expand / collapse ─────────────────────────────────────
+function toggleCard(symbol) {
+  const card = document.getElementById('card-' + symbol);
+  if (!card) return;
+  card.classList.toggle('open');
+  // Auto-expand all cards on first visit
+}
+
+// Open high-confidence cards by default on page load
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.signal-card').forEach(function(card) {
+    if (card.classList.contains('no-setup')) return;
+    const confNum = card.querySelector('.confidence-number');
+    if (confNum) {
+      const val = parseInt(confNum.textContent);
+      if (val >= 70) card.classList.add('open');
+    }
+  });
+});
+
+// ── Filter ────────────────────────────────────────────────────
+function filterSignals(type, btn) {
+  // Update button states
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.querySelectorAll('.signal-card').forEach(function(card) {
+    const cat   = card.getAttribute('data-category') || '';
+    const stage = card.getAttribute('data-stage')    || '';
+    let show = false;
+    if (type === 'ALL')       show = true;
+    else if (type === 'ACTIVE') show = stage !== 'No Setup' && stage !== '';
+    else show = cat === type;
+    card.style.display = show ? '' : 'none';
+  });
+}
+
+// ── Countdown timer ───────────────────────────────────────────
+let secondsUntilRefresh = 30;
+
+function tick() {
+  secondsUntilRefresh--;
+  const el = document.getElementById('countdown-sec');
+  if (el) el.textContent = secondsUntilRefresh;
+
+  if (secondsUntilRefresh <= 0) {
+    secondsUntilRefresh = 30;
+    refreshSignals();
+  }
+}
+
+setInterval(tick, 1000);
+
+// ── Live Refresh ──────────────────────────────────────────────
+function refreshSignals() {
+  fetch('/api/signals/detailed')
+    .then(r => r.json())
+    .then(data => {
+      // Update last-updated timestamp
+      const el = document.getElementById('last-updated');
+      if (el) el.textContent = data.updated_at || '—';
+
+      // Update session info if session has changed
+      if (data.session_info) {
+        const nameEl = document.getElementById('session-name-display');
+        const charEl = document.getElementById('session-char');
+        const stratEl = document.getElementById('session-strat');
+        if (nameEl) nameEl.textContent = data.session_info.label || '';
+        if (charEl) charEl.textContent = data.session_info.character || '';
+        if (stratEl) stratEl.textContent = data.session_info.strategy || '';
+      }
+
+      // Update countdown display
+      if (data.session_mins !== undefined) {
+        const cdEl = document.getElementById('countdown-display');
+        if (cdEl) cdEl.textContent = '~' + data.session_mins + 'm remaining';
+      }
+
+      // Rebuild confidence bars / numbers from fresh data
+      if (data.signals && data.signals.length) {
+        data.signals.forEach(function(sig) {
+          const card = document.getElementById('card-' + sig.symbol);
+          if (!card) return;
+
+          // Update confidence
+          const confEl = card.querySelector('.confidence-number');
+          if (confEl) {
+            confEl.textContent = sig.confidence + '%';
+            confEl.className = 'confidence-number ' +
+              (sig.confidence >= 75 ? 'conf-high' : sig.confidence >= 55 ? 'conf-medium' : 'conf-low');
+          }
+          const barEl = card.querySelector('.confidence-bar-inner');
+          if (barEl) {
+            barEl.style.width = sig.confidence + '%';
+          }
+
+          // Pulse card border if confidence changed significantly
+          card.style.transition = 'box-shadow 0.3s';
+          card.style.boxShadow = '0 0 12px rgba(0,255,136,0.1)';
+          setTimeout(() => { card.style.boxShadow = ''; }, 800);
+        });
+      }
+    })
+    .catch(function(e) {
+      console.warn('[ManaBot] Signal refresh failed:', e);
+    });
+}
+
+// ── Keyboard shortcuts ────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'r' || e.key === 'R') {
+    secondsUntilRefresh = 30;
+    refreshSignals();
+  }
+  if (e.key === 'e' || e.key === 'E') {
+    // Expand all
+    document.querySelectorAll('.signal-card').forEach(c => c.classList.add('open'));
+  }
+  if (e.key === 'c' || e.key === 'C') {
+    // Collapse all
+    document.querySelectorAll('.signal-card').forEach(c => c.classList.remove('open'));
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ManaBot — DEBRIEF</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #080b0f;
+      --bg2:         #0d1117;
+      --bg3:         #111820;
+      --border:      #1a2332;
+      --border2:     #243040;
+      --green:       #00ff88;
+      --green-dim:   #00cc66;
+      --green-glow2: rgba(0,255,136,0.06);
+      --red:         #ff4466;
+      --amber:       #ffaa00;
+      --blue:        #4a9eff;
+      --purple:      #aa88ff;
+      --cyan:        #00ddff;
+      --text:        #c8d8e8;
+      --text-dim:    #6a8aaa;
+      --text-faint:  #3a5060;
+      --font:        'Share Tech Mono', 'Courier New', monospace;
+    }
+
+    html, body {
+      background: var(--bg); color: var(--text);
+      font-family: var(--font); font-size: 13px;
+      line-height: 1.5; min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    /* ── Nav ────────────────────────────────────────────────────── */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; height: 48px;
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 20px rgba(0,0,0,0.6);
+    }
+    .nav-logo { font-size: 15px; font-weight: 700; color: var(--green); letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 12px rgba(0,255,136,0.5); }
+    .nav-links { display: flex; gap: 2px; }
+    .nav-links a { padding: 5px 11px; border-radius: 4px; color: var(--text-dim); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; text-decoration: none; transition: all 0.15s; border: 1px solid transparent; }
+    .nav-links a:hover { color: var(--text); background: var(--bg3); }
+    .nav-links a.active { color: var(--green); background: var(--green-glow2); border-color: rgba(0,255,136,0.25); }
+    .nav-clock { font-size: 13px; color: var(--green); letter-spacing: 1px; }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .layout { display: grid; grid-template-columns: 1fr 260px; max-width: 1400px; margin: 0 auto; min-height: calc(100vh - 48px); }
+    .main-col { padding: 16px 16px 28px 20px; border-right: 1px solid var(--border); }
+    .side-col  { padding: 16px; }
+
+    /* ── Summary Strip ──────────────────────────────────────────── */
+    .summary-strip {
+      display: grid; grid-template-columns: repeat(6, 1fr);
+      gap: 0; background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 6px; margin-bottom: 14px; overflow: hidden;
+    }
+    .ss-cell { padding: 12px 14px; border-right: 1px solid var(--border); text-align: center; }
+    .ss-cell:last-child { border-right: none; }
+    .ss-label { font-size: 8px; color: var(--text-faint); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+    .ss-value { font-size: 17px; font-weight: 700; line-height: 1; }
+
+    /* ── Filter Bar ─────────────────────────────────────────────── */
+    .filter-row {
+      display: flex; gap: 8px; align-items: center;
+      margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .filter-group { display: flex; gap: 4px; }
+    .f-btn {
+      font-family: var(--font); font-size: 10px; letter-spacing: 0.5px;
+      padding: 5px 12px; border-radius: 3px; border: 1px solid var(--border);
+      background: var(--bg2); color: var(--text-dim); cursor: pointer;
+      transition: all 0.15s; text-transform: uppercase;
+    }
+    .f-btn:hover   { border-color: var(--border2); color: var(--text); }
+    .f-btn.active  { border-color: var(--green); color: var(--green); background: var(--green-glow2); }
+    .f-btn.red-active { border-color: var(--red); color: var(--red); background: rgba(255,68,102,0.06); }
+    .f-sep { width: 1px; background: var(--border); align-self: stretch; margin: 0 4px; }
+    .f-count { font-size: 10px; color: var(--text-faint); letter-spacing: 0.5px; margin-left: auto; }
+
+    /* ── Trade Card ─────────────────────────────────────────────── */
+    .trade-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 6px; margin-bottom: 8px; overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .trade-card:hover { border-color: var(--border2); }
+    .trade-card.win  { border-left: 3px solid var(--green); }
+    .trade-card.loss { border-left: 3px solid var(--red); }
+    .trade-card.open { border-left: 3px solid var(--amber); }
+
+    /* Card Header Row */
+    .card-row {
+      display: grid;
+      grid-template-columns: 42px 90px 70px 80px 90px 70px 80px 80px 60px 50px 1fr 28px;
+      gap: 0; align-items: center; padding: 10px 14px;
+      cursor: pointer; user-select: none;
+    }
+    .card-row:hover { background: rgba(255,255,255,0.01); }
+
+    .cr-date   { font-size: 10px; color: var(--text-faint); }
+    .cr-symbol { font-size: 14px; font-weight: 700; color: var(--text); }
+    .cr-dir    { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 3px; }
+    .dir-buy  { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.25); }
+    .dir-sell { background: rgba(255,68,102,0.1); color: var(--red);   border: 1px solid rgba(255,68,102,0.25); }
+
+    .cr-session { font-size: 10px; color: var(--text-faint); }
+    .cr-entry   { font-size: 11px; color: var(--text-dim); }
+    .cr-pips    { font-size: 12px; font-weight: 600; }
+    .cr-rr      { font-size: 11px; }
+    .cr-pnl     { font-size: 13px; font-weight: 700; }
+    .cr-grade   { }
+    .cr-result  { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 3px; text-align: center; }
+
+    .result-win  { background: rgba(0,255,136,0.08); color: var(--green); border: 1px solid rgba(0,255,136,0.2); }
+    .result-loss { background: rgba(255,68,102,0.08); color: var(--red);   border: 1px solid rgba(255,68,102,0.2); }
+    .result-open { background: rgba(255,170,0,0.08);  color: var(--amber); border: 1px solid rgba(255,170,0,0.2); }
+
+    .grade-badge {
+      font-size: 10px; padding: 2px 7px; border-radius: 3px;
+      border: 1px solid var(--border2); color: var(--text-faint); background: var(--bg3);
+    }
+    .grade-aplus { border-color: rgba(0,255,136,0.3); color: var(--green); background: var(--green-glow2); }
+    .grade-a     { border-color: rgba(0,221,255,0.3); color: var(--cyan);  background: rgba(0,221,255,0.05); }
+    .grade-b     { border-color: rgba(255,170,0,0.3); color: var(--amber); background: rgba(255,170,0,0.05); }
+    .grade-c     { border-color: rgba(255,68,102,0.3); color: var(--red);  background: rgba(255,68,102,0.05); }
+
+    .expand-icon { font-size: 13px; color: var(--text-faint); text-align: right; transition: transform 0.2s; }
+    .trade-card.open-card .expand-icon { transform: rotate(180deg); }
+
+    /* Positive / negative colours */
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+    .neu { color: var(--text-dim); }
+
+    /* ── Expanded Body ──────────────────────────────────────────── */
+    .card-body {
+      display: none; border-top: 1px solid var(--border);
+    }
+    .trade-card.open-card .card-body { display: block; }
+
+    /* Levels row */
+    .levels-row {
+      display: flex; gap: 0; border-bottom: 1px solid var(--border);
+    }
+    .lv-cell { flex: 1; padding: 9px 14px; border-right: 1px solid var(--border); }
+    .lv-cell:last-child { border-right: none; }
+    .lv-label { font-size: 9px; color: var(--text-faint); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+    .lv-val   { font-size: 12px; }
+    .lv-entry { color: var(--text); }
+    .lv-sl    { color: var(--red); }
+    .lv-tp1   { color: var(--green-dim); }
+    .lv-tp2   { color: var(--green); }
+    .lv-lot   { color: var(--text-dim); }
+    .lv-rr    { color: var(--amber); }
+
+    /* Detail sections */
+    .detail-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-cell {
+      padding: 12px 14px; border-right: 1px solid var(--border);
+    }
+    .detail-cell:last-child { border-right: none; }
+    .detail-label {
+      font-size: 9px; color: var(--text-faint); letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 7px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .detail-label::before { content: "▌"; color: var(--green-dim); font-size: 10px; }
+    .detail-text {
+      font-size: 11px; color: var(--text-dim); line-height: 1.8;
+    }
+    .debrief-text {
+      font-size: 11px; color: var(--amber); line-height: 1.8;
+      font-style: italic;
+    }
+    .debrief-text.empty { color: var(--text-faint); font-style: normal; }
+
+    /* Confluences */
+    .conf-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .conf-chip {
+      font-size: 9px; padding: 3px 8px; border-radius: 3px;
+      background: var(--bg3); border: 1px solid var(--border2); color: var(--text-dim);
+    }
+    .conf-chip.smt { border-color: rgba(0,221,255,0.25); color: var(--cyan); background: rgba(0,221,255,0.05); }
+
+    /* Timing row */
+    .timing-row {
+      display: flex; gap: 20px; padding: 10px 14px;
+      border-bottom: 1px solid var(--border); flex-wrap: wrap;
+    }
+    .timing-item { display: flex; flex-direction: column; gap: 2px; }
+    .timing-label { font-size: 9px; color: var(--text-faint); letter-spacing: 1px; text-transform: uppercase; }
+    .timing-val   { font-size: 11px; color: var(--text-dim); }
+
+    /* Outcome bar */
+    .outcome-bar-wrap {
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .outcome-label { font-size: 9px; color: var(--text-faint); width: 80px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 1px; }
+    .outcome-bar-outer { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .outcome-bar-inner { height: 100%; border-radius: 3px; }
+    .outcome-val { font-size: 11px; min-width: 50px; text-align: right; }
+
+    /* ── Sidebar ────────────────────────────────────────────────── */
+    .side-panel {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 6px; margin-bottom: 12px; overflow: hidden;
+    }
+    .side-panel-header {
+      padding: 9px 14px; border-bottom: 1px solid var(--border);
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .side-panel-header .acc { color: var(--green); margin-right: 6px; }
+    .side-panel-body { padding: 12px 14px; }
+
+    .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { font-size: 11px; color: var(--text-dim); }
+    .stat-val   { font-size: 12px; font-weight: 600; }
+
+    /* Table header row */
+    .thead-row {
+      display: grid;
+      grid-template-columns: 42px 90px 70px 80px 90px 70px 80px 80px 60px 50px 1fr 28px;
+      gap: 0; padding: 6px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg3);
+    }
+    .th { font-size: 9px; color: var(--text-faint); letter-spacing: 1px; text-transform: uppercase; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 48px 20px;
+      color: var(--text-faint); font-size: 12px; letter-spacing: 0.5px;
+    }
+
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 1fr; }
+      .main-col { border-right: none; padding: 12px; }
+      .side-col { border-top: 1px solid var(--border); padding: 12px; }
+      .summary-strip { grid-template-columns: repeat(3,1fr); }
+    }
+    @media (max-width: 700px) {
+      .thead-row, .card-row {
+        grid-template-columns: 70px 60px 70px 1fr 70px;
+      }
+      .cr-session, .cr-entry, .cr-rr, .cr-grade, .hide-sm { display: none; }
+      .summary-strip { grid-template-columns: repeat(2,1fr); }
+      .nav-links a { padding: 5px 6px; font-size: 9px; }
+      .nav-clock { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-logo">MANABOT</div>
+  <div class="nav-links">
+    <a href="/">CMD</a>
+    <a href="/execute">TRADE</a>
+    <a href="/signal">SIGNAL</a>
+    <a href="/neural">NEURAL</a>
+    <a href="/vault">VAULT</a>
+    <a href="/debrief" class="active">DEBRIEF</a>
+    <a href="/pulse">PULSE</a>
+    <a href="/root">ROOT</a>
+  </div>
+  <div class="nav-clock" id="nav-clock">--:--:-- UTC</div>
+</nav>
+
+<div class="layout">
+<div class="main-col">
+
+  <!-- ── Summary Strip ──────────────────────────────────────────── -->
+  {% set wins   = trades | selectattr('result','equalto','WIN')  | list %}
+  {% set losses = trades | selectattr('result','equalto','LOSS') | list %}
+  {% set opens  = trades | selectattr('result','equalto','OPEN') | list %}
+  {% set total_pnl = trades | sum(attribute='pnl_usd') %}
+  {% set win_rate  = (wins|length / trades|length * 100) if trades|length > 0 else 0 %}
+
+  <div class="summary-strip">
+    <div class="ss-cell">
+      <div class="ss-label">Total Trades</div>
+      <div class="ss-value" style="color:var(--text)">{{ trades|length }}</div>
+    </div>
+    <div class="ss-cell">
+      <div class="ss-label">Wins / Losses</div>
+      <div class="ss-value">
+        <span style="color:var(--green)">{{ wins|length }}</span>
+        <span style="color:var(--text-faint);font-size:13px"> / </span>
+        <span style="color:var(--red)">{{ losses|length }}</span>
+      </div>
+    </div>
+    <div class="ss-cell">
+      <div class="ss-label">Win Rate</div>
+      <div class="ss-value {{ 'pos' if win_rate >= 55 else ('neu' if win_rate >= 45 else 'neg') }}">
+        {{ "%.0f"|format(win_rate) }}%
+      </div>
+    </div>
+    <div class="ss-cell">
+      <div class="ss-label">Total P&L</div>
+      <div class="ss-value {{ 'pos' if total_pnl >= 0 else 'neg' }}">
+        {{ '+' if total_pnl >= 0 else '' }}${{ "{:,.0f}".format(total_pnl) }}
+      </div>
+    </div>
+    <div class="ss-cell">
+      <div class="ss-label">Open Now</div>
+      <div class="ss-value" style="color:var(--amber)">{{ opens|length }}</div>
+    </div>
+    <div class="ss-cell">
+      <div class="ss-label">Showing</div>
+      <div class="ss-value" style="color:var(--text-dim)" id="showing-count">{{ trades|length }}</div>
+    </div>
+  </div>
+
+  <!-- ── Filter Bar ──────────────────────────────────────────────── -->
+  <div class="filter-row">
+    <!-- Result filter -->
+    <div class="filter-group">
+      <button class="f-btn active" onclick="applyFilter('result','ALL',this)">All</button>
+      <button class="f-btn" onclick="applyFilter('result','WIN',this)">Wins</button>
+      <button class="f-btn" onclick="applyFilter('result','LOSS',this)">Losses</button>
+      <button class="f-btn" onclick="applyFilter('result','OPEN',this)">Open</button>
+    </div>
+    <div class="f-sep"></div>
+    <!-- Symbol filter -->
+    <div class="filter-group">
+      <button class="f-btn active" onclick="applyFilter('symbol','ALL',this)">All Markets</button>
+      {% set seen = [] %}
+      {% for t in trades %}
+        {% if t.symbol not in seen %}
+          <button class="f-btn" onclick="applyFilter('symbol','{{ t.symbol }}',this)">{{ t.symbol }}</button>
+          {% if seen.append(t.symbol) %}{% endif %}
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="f-sep"></div>
+    <!-- Session filter -->
+    <div class="filter-group">
+      <button class="f-btn active" onclick="applyFilter('session','ALL',this)">All Sessions</button>
+      <button class="f-btn" onclick="applyFilter('session','London',this)">London</button>
+      <button class="f-btn" onclick="applyFilter('session','NY Open',this)">NY Open</button>
+      <button class="f-btn" onclick="applyFilter('session','New York',this)">NY</button>
+      <button class="f-btn" onclick="applyFilter('session','Asian',this)">Asian</button>
+    </div>
+    <div class="f-sep"></div>
+    <!-- Grade filter -->
+    <div class="filter-group">
+      <button class="f-btn active" onclick="applyFilter('grade','ALL',this)">All Grades</button>
+      <button class="f-btn" onclick="applyFilter('grade','A+',this)" style="color:var(--green)">A+</button>
+      <button class="f-btn" onclick="applyFilter('grade','A',this)" style="color:var(--cyan)">A</button>
+      <button class="f-btn" onclick="applyFilter('grade','B',this)" style="color:var(--amber)">B</button>
+      <button class="f-btn" onclick="applyFilter('grade','C',this)" style="color:var(--red)">C</button>
+    </div>
+    <div class="f-count" id="filter-count">{{ trades|length }} trades</div>
+  </div>
+
+  <!-- ── Column Headers ─────────────────────────────────────────── -->
+  <div class="thead-row">
+    <div class="th">#</div>
+    <div class="th">Symbol</div>
+    <div class="th">Dir</div>
+    <div class="th">Session</div>
+    <div class="th">Entry</div>
+    <div class="th">Pips</div>
+    <div class="th">R:R</div>
+    <div class="th">P&L</div>
+    <div class="th">Grade</div>
+    <div class="th">Result</div>
+    <div class="th">Date</div>
+    <div class="th"></div>
+  </div>
+
+  <!-- ── Trade List ──────────────────────────────────────────────── -->
+  <div id="trades-list">
+  {% if trades %}
+    {% for t in trades %}
+    {% set is_win  = t.result == 'WIN' %}
+    {% set is_loss = t.result == 'LOSS' %}
+    {% set is_open = t.result == 'OPEN' %}
+    {% set card_cls = 'win' if is_win else ('loss' if is_loss else 'open') %}
+    {% set gc = 'grade-aplus' if t.grade == 'A+' else ('grade-a' if t.grade == 'A' else ('grade-b' if t.grade == 'B' else 'grade-c')) %}
+
+    <div class="trade-card {{ card_cls }}"
+         id="tc-{{ t.id }}"
+         data-result="{{ t.result }}"
+         data-symbol="{{ t.symbol }}"
+         data-session="{{ t.session }}"
+         data-grade="{{ t.grade }}">
+
+      <!-- ── Summary Row (always visible) ── -->
+      <div class="card-row" onclick="toggleTrade({{ t.id }})">
+        <div class="cr-date">{{ t.date[-5:] if t.date else '—' }}</div>
+        <div class="cr-symbol">{{ t.symbol }}</div>
+        <div>
+          <span class="cr-dir {{ 'dir-buy' if t.direction == 'BUY' else 'dir-sell' }}">
+            {{ '▲' if t.direction == 'BUY' else '▼' }} {{ t.direction }}
+          </span>
+        </div>
+        <div class="cr-session" style="font-size:10px;color:var(--text-faint)">{{ t.session }}</div>
+        <div class="cr-entry" style="font-size:10px;color:var(--text-dim)">
+          {{ "%.5f"|format(t.entry) if t.entry and t.entry < 100 else ("%.2f"|format(t.entry) if t.entry else '—') }}
+        </div>
+        <div class="cr-pips {{ 'pos' if t.pips and t.pips >= 0 else 'neg' }}">
+          {% if t.pips %}{{ '+' if t.pips >= 0 else '' }}{{ "%.0f"|format(t.pips) }}p{% else %}—{% endif %}
+        </div>
+        <div class="cr-rr {{ 'pos' if t.rr_achieved and t.rr_achieved >= 0 else 'neg' }}">
+          {% if t.rr_achieved %}{{ '+' if t.rr_achieved >= 0 else '' }}{{ "%.1f"|format(t.rr_achieved) }}R{% else %}—{% endif %}
+        </div>
+        <div class="cr-pnl {{ 'pos' if t.pnl_usd and t.pnl_usd >= 0 else 'neg' }}">
+          {% if t.pnl_usd %}{{ '+' if t.pnl_usd >= 0 else '' }}${{ "{:,.0f}".format(t.pnl_usd) }}{% else %}—{% endif %}
+        </div>
+        <div class="cr-grade">
+          <span class="grade-badge {{ gc }}">{{ t.grade }}</span>
+        </div>
+        <div>
+          <span class="cr-result result-{{ t.result.lower() }}">{{ t.result }}</span>
+        </div>
+        <div style="font-size:10px;color:var(--text-faint)">{{ t.date or '—' }}</div>
+        <div class="expand-icon">▾</div>
+      </div>
+
+      <!-- ── Expanded Body ── -->
+      <div class="card-body">
+
+        <!-- Entry / SL / TP levels -->
+        <div class="levels-row">
+          <div class="lv-cell">
+            <div class="lv-label">Entry</div>
+            <div class="lv-val lv-entry">
+              {{ "%.5f"|format(t.entry) if t.entry and t.entry < 100 else ("%.2f"|format(t.entry) if t.entry else '—') }}
+            </div>
+          </div>
+          <div class="lv-cell">
+            <div class="lv-label">Stop Loss</div>
+            <div class="lv-val lv-sl">
+              {{ "%.5f"|format(t.sl) if t.sl and t.sl < 100 else ("%.2f"|format(t.sl) if t.sl else '—') }}
+              {% if t.sl_pips %}<span style="color:var(--text-faint);font-size:10px"> ({{ "%.0f"|format(t.sl_pips) }}p)</span>{% endif %}
+            </div>
+          </div>
+          <div class="lv-cell">
+            <div class="lv-label">TP1</div>
+            <div class="lv-val lv-tp1">
+              {{ "%.5f"|format(t.tp1) if t.tp1 and t.tp1 < 100 else ("%.2f"|format(t.tp1) if t.tp1 else '—') }}
+            </div>
+          </div>
+          <div class="lv-cell">
+            <div class="lv-label">TP2</div>
+            <div class="lv-val lv-tp2">
+              {{ "%.5f"|format(t.tp2) if t.tp2 and t.tp2 < 100 else ("%.2f"|format(t.tp2) if t.tp2 else '—') }}
+            </div>
+          </div>
+          <div class="lv-cell">
+            <div class="lv-label">Lot Size</div>
+            <div class="lv-val lv-lot">{{ t.lot_size or '—' }}</div>
+          </div>
+          <div class="lv-cell">
+            <div class="lv-label">R:R Achieved</div>
+            <div class="lv-val lv-rr">
+              {% if t.rr_achieved %}
+                <span class="{{ 'pos' if t.rr_achieved >= 0 else 'neg' }}">
+                  {{ '+' if t.rr_achieved >= 0 else '' }}{{ "%.2f"|format(t.rr_achieved) }}R
+                </span>
+              {% else %}—{% endif %}
+            </div>
+          </div>
+          <div class="lv-cell">
+            <div class="lv-label">Final P&L</div>
+            <div class="lv-val {{ 'pos' if t.pnl_usd and t.pnl_usd >= 0 else 'neg' }}" style="font-size:14px;font-weight:700">
+              {% if t.pnl_usd %}{{ '+' if t.pnl_usd >= 0 else '' }}${{ "{:,.2f}".format(t.pnl_usd) }}{% else %}—{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Timing row -->
+        <div class="timing-row">
+          <div class="timing-item">
+            <span class="timing-label">Opened</span>
+            <span class="timing-val">{{ t.open_time or '—' }}</span>
+          </div>
+          <div class="timing-item">
+            <span class="timing-label">Closed</span>
+            <span class="timing-val">{{ t.close_time or ('Still Open' if t.result == 'OPEN' else '—') }}</span>
+          </div>
+          <div class="timing-item">
+            <span class="timing-label">Session</span>
+            <span class="timing-val" style="color:var(--green-dim)">{{ t.session }}</span>
+          </div>
+          <div class="timing-item">
+            <span class="timing-label">Strategy</span>
+            <span class="timing-val">{{ t.strategy or 'ICT Smart Money' }}</span>
+          </div>
+          <div class="timing-item">
+            <span class="timing-label">Balance After</span>
+            <span class="timing-val">{% if t.balance_after %}${{ "{:,.2f}".format(t.balance_after) }}{% else %}—{% endif %}</span>
+          </div>
+          {% if t.smt_confirmed %}
+          <div class="timing-item">
+            <span class="timing-label">SMT</span>
+            <span class="timing-val" style="color:var(--cyan)">✓ Confirmed</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Notes + Debrief -->
+        <div class="detail-grid">
+          <div class="detail-cell">
+            <div class="detail-label">Trade Notes — What Happened</div>
+            <div class="detail-text">{{ t.notes or 'No notes recorded for this trade.' }}</div>
+          </div>
+          <div class="detail-cell">
+            <div class="detail-label">Post-Trade Debrief — Lesson</div>
+            {% if t.debrief %}
+              <div class="debrief-text">{{ t.debrief }}</div>
+            {% else %}
+              <div class="debrief-text empty">No debrief recorded yet.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Confluences -->
+        {% if t.confluence_type %}
+        <div style="padding:10px 14px;border-top:1px solid var(--border);">
+          <div style="font-size:9px;color:var(--text-faint);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;">Confluences</div>
+          <div class="conf-chips">
+            {% for cf in t.confluence_type.split(' + ') %}
+            <span class="conf-chip">{{ cf.strip() }}</span>
+            {% endfor %}
+            {% if t.smt_confirmed %}
+            <span class="conf-chip smt">✓ SMT Divergence</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Outcome visual bar -->
+        {% if t.result != 'OPEN' and t.rr_achieved %}
+        <div class="outcome-bar-wrap">
+          <span class="outcome-label">R achieved</span>
+          <div class="outcome-bar-outer">
+            {% set bar_pct = [t.rr_achieved|abs / 4.0 * 100, 100]|min %}
+            <div class="outcome-bar-inner" style="width:{{ bar_pct }}%;background:{{ 'var(--green)' if t.rr_achieved >= 0 else 'var(--red)' }}"></div>
+          </div>
+          <span class="outcome-val {{ 'pos' if t.rr_achieved >= 0 else 'neg' }}">
+            {{ '+' if t.rr_achieved >= 0 else '' }}{{ "%.2f"|format(t.rr_achieved) }}R
+          </span>
+        </div>
+        {% endif %}
+
+      </div><!-- /card-body -->
+    </div><!-- /trade-card -->
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      ── No trades recorded yet ──<br>
+      <span style="font-size:11px;color:var(--text-faint)">
+        Trades will appear here as ManaBot executes them.
+      </span>
+    </div>
+  {% endif %}
+  </div>
+
+</div><!-- /main-col -->
+
+<!-- ── Sidebar ───────────────────────────────────────────────────── -->
+<div class="side-col">
+
+  <!-- Quick Stats -->
+  <div class="side-panel">
+    <div class="side-panel-header"><span class="acc">◈</span> Journal Stats</div>
+    <div class="side-panel-body">
+      <div class="stat-row">
+        <span class="stat-label">Total Trades</span>
+        <span class="stat-val" style="color:var(--text)">{{ trades|length }}</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Win Rate</span>
+        <span class="stat-val {{ 'pos' if win_rate >= 55 else 'neg' }}">
+          {{ "%.1f"|format(win_rate) }}%
+        </span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Total P&L</span>
+        <span class="stat-val {{ 'pos' if total_pnl >= 0 else 'neg' }}">
+          {{ '+' if total_pnl >= 0 else '' }}${{ "{:,.0f}".format(total_pnl) }}
+        </span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">A+ Setups</span>
+        <span class="stat-val" style="color:var(--green)">
+          {{ trades | selectattr('grade','equalto','A+') | list | length }}
+        </span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">C Grade Trades</span>
+        <span class="stat-val" style="color:var(--red)">
+          {{ trades | selectattr('grade','equalto','C') | list | length }}
+        </span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">SMT Confirmed</span>
+        <span class="stat-val" style="color:var(--cyan)">
+          {{ trades | selectattr('smt_confirmed') | list | length }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grade Distribution -->
+  <div class="side-panel">
+    <div class="side-panel-header"><span class="acc">◈</span> Grade Distribution</div>
+    <div class="side-panel-body">
+      {% set grades = [('A+', 'green'), ('A', 'cyan'), ('B', 'amber'), ('C', 'red')] %}
+      {% for grade, colour in grades %}
+      {% set count = trades | selectattr('grade','equalto',grade) | list | length %}
+      {% set pct = (count / trades|length * 100)|int if trades|length > 0 else 0 %}
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+          <span style="font-size:11px;color:var(--{{ colour }})">Grade {{ grade }}</span>
+          <span style="font-size:11px;color:var(--text-dim)">{{ count }} ({{ pct }}%)</span>
+        </div>
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;width:{{ pct }}%;background:var(--{{ colour }});border-radius:2px;"></div>
+        </div>
+      </div>
+      {% endfor %}
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--text-faint);line-height:1.7;">
+        A+ = 4+ confluences, perfect execution.<br>
+        A  = 3 confluences, good execution.<br>
+        B  = 2 confluences, minor flaws.<br>
+        C  = 1 confluence, forced trade.
+      </div>
+    </div>
+  </div>
+
+  <!-- Top symbols -->
+  <div class="side-panel">
+    <div class="side-panel-header"><span class="acc">◈</span> Best Markets</div>
+    <div class="side-panel-body">
+      {% set sym_data = {} %}
+      {% for t in trades %}
+        {% if t.symbol not in sym_data %}
+          {% if sym_data.update({t.symbol: {'wins':0,'total':0,'pnl':0}}) %}{% endif %}
+        {% endif %}
+        {% if sym_data[t.symbol].update({'total': sym_data[t.symbol].total + 1, 'pnl': sym_data[t.symbol].pnl + (t.pnl_usd or 0), 'wins': sym_data[t.symbol].wins + (1 if t.result == 'WIN' else 0)}) %}{% endif %}
+      {% endfor %}
+      {% for sym, d in sym_data.items() %}
+      {% set wr = (d.wins / d.total * 100)|int if d.total > 0 else 0 %}
+      <div class="stat-row">
+        <span class="stat-label" style="font-weight:600;color:var(--text)">{{ sym }}</span>
+        <span style="font-size:10px;color:var(--text-faint)">{{ d.total }}t · {{ wr }}%</span>
+        <span class="stat-val {{ 'pos' if d.pnl >= 0 else 'neg' }}" style="font-size:11px">
+          {{ '+' if d.pnl >= 0 else '' }}${{ "{:,.0f}".format(d.pnl) }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Links -->
+  <div class="side-panel">
+    <div class="side-panel-header"><span class="acc">◈</span> Actions</div>
+    <div class="side-panel-body" style="display:flex;flex-direction:column;gap:6px;">
+      <a href="/pulse" style="display:block;padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text-dim);text-decoration:none;font-size:10px;letter-spacing:0.5px;text-align:center;text-transform:uppercase;">
+        → Full Performance Stats
+      </a>
+      <a href="/signal" style="display:block;padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text-dim);text-decoration:none;font-size:10px;letter-spacing:0.5px;text-align:center;text-transform:uppercase;">
+        → View Live Signals
+      </a>
+    </div>
+  </div>
+
+</div><!-- /side-col -->
+</div><!-- /layout -->
+
+<script>
+// ── Clock ──────────────────────────────────────────────────────
+function tick() {
+  const n = new Date();
+  const p = v => String(v).padStart(2,'0');
+  const el = document.getElementById('nav-clock');
+  if (el) el.textContent = p(n.getUTCHours())+':'+p(n.getUTCMinutes())+':'+p(n.getUTCSeconds())+' UTC';
+}
+tick(); setInterval(tick, 1000);
+
+// ── Toggle trade card open/closed ──────────────────────────────
+function toggleTrade(id) {
+  const card = document.getElementById('tc-' + id);
+  if (card) card.classList.toggle('open-card');
+}
+
+// ── Filter system ──────────────────────────────────────────────
+const activeFilters = { result: 'ALL', symbol: 'ALL', session: 'ALL', grade: 'ALL' };
+
+function applyFilter(type, value, btn) {
+  // Update active state within the group
+  const group = btn.parentElement;
+  group.querySelectorAll('.f-btn').forEach(b => {
+    b.classList.remove('active', 'red-active');
+  });
+  btn.classList.add(type === 'result' && value === 'LOSS' ? 'red-active' : 'active');
+
+  activeFilters[type] = value;
+  runFilters();
+}
+
+function runFilters() {
+  const cards = document.querySelectorAll('.trade-card');
+  let visible = 0;
+  cards.forEach(card => {
+    const res  = card.getAttribute('data-result')  || '';
+    const sym  = card.getAttribute('data-symbol')  || '';
+    const sess = card.getAttribute('data-session') || '';
+    const grade= card.getAttribute('data-grade')   || '';
+
+    const show =
+      (activeFilters.result  === 'ALL' || activeFilters.result  === res)  &&
+      (activeFilters.symbol  === 'ALL' || activeFilters.symbol  === sym)  &&
+      (activeFilters.session === 'ALL' || sess.includes(activeFilters.session)) &&
+      (activeFilters.grade   === 'ALL' || activeFilters.grade   === grade);
+
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  const fc = document.getElementById('filter-count');
+  const sc = document.getElementById('showing-count');
+  if (fc) fc.textContent = visible + ' trade' + (visible !== 1 ? 's' : '');
+  if (sc) sc.textContent = visible;
+}
+
+// ── Expand A+ trades by default ────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.trade-card').forEach(function(card) {
+    if (card.getAttribute('data-grade') === 'A+') {
+      card.classList.add('open-card');
+    }
+  });
+});
+</script>
+</body>
+</html>

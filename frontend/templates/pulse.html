@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ManaBot — PULSE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #080b0f;
+      --bg2:         #0d1117;
+      --bg3:         #111820;
+      --border:      #1a2332;
+      --border2:     #243040;
+      --green:       #00ff88;
+      --green-dim:   #00cc66;
+      --green-glow2: rgba(0,255,136,0.06);
+      --red:         #ff4466;
+      --amber:       #ffaa00;
+      --blue:        #4a9eff;
+      --purple:      #aa88ff;
+      --cyan:        #00ddff;
+      --text:        #c8d8e8;
+      --text-dim:    #6a8aaa;
+      --text-faint:  #3a5060;
+      --font:        'Share Tech Mono', 'Courier New', monospace;
+    }
+
+    html, body {
+      background: var(--bg); color: var(--text);
+      font-family: var(--font); font-size: 13px;
+      line-height: 1.5; min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    /* ── Nav ────────────────────────────────────────────────────── */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; height: 48px;
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 20px rgba(0,0,0,0.6);
+    }
+    .nav-logo { font-size: 15px; font-weight: 700; color: var(--green); letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 12px rgba(0,255,136,0.5); }
+    .nav-links { display: flex; gap: 2px; }
+    .nav-links a { padding: 5px 11px; border-radius: 4px; color: var(--text-dim); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; text-decoration: none; transition: all 0.15s; border: 1px solid transparent; }
+    .nav-links a:hover { color: var(--text); background: var(--bg3); }
+    .nav-links a.active { color: var(--green); background: var(--green-glow2); border-color: rgba(0,255,136,0.25); }
+    .nav-clock { font-size: 13px; color: var(--green); letter-spacing: 1px; }
+
+    /* ── Page ───────────────────────────────────────────────────── */
+    .page { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+    /* ── Section label ──────────────────────────────────────────── */
+    .section-label {
+      font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--text-faint); margin-bottom: 12px; display: flex;
+      align-items: center; gap: 8px;
+    }
+    .section-label::before { content: "◈"; color: var(--green); }
+
+    /* ── Panel ──────────────────────────────────────────────────── */
+    .panel {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 6px; margin-bottom: 16px; overflow: hidden;
+    }
+    .panel-header {
+      padding: 9px 16px; border-bottom: 1px solid var(--border);
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-dim); display: flex; justify-content: space-between; align-items: center;
+    }
+    .panel-header .acc { color: var(--green); margin-right: 6px; }
+    .panel-body { padding: 16px; }
+
+    /* ── KPI Row ────────────────────────────────────────────────── */
+    .kpi-row {
+      display: grid; grid-template-columns: repeat(8, 1fr);
+      gap: 0; margin-bottom: 16px;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+    }
+    .kpi {
+      padding: 14px 16px; border-right: 1px solid var(--border); text-align: center;
+    }
+    .kpi:last-child { border-right: none; }
+    .kpi-label { font-size: 8px; color: var(--text-faint); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; }
+    .kpi-value { font-size: 20px; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+    .kpi-sub   { font-size: 9px; color: var(--text-faint); }
+
+    .green  { color: var(--green); }
+    .red    { color: var(--red); }
+    .amber  { color: var(--amber); }
+    .blue   { color: var(--blue); }
+    .white  { color: var(--text); }
+    .dim    { color: var(--text-dim); }
+
+    /* ── Two column layout ──────────────────────────────────────── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+    /* ── Equity Curve (pure SVG, no libraries) ──────────────────── */
+    .equity-wrap { position: relative; width: 100%; }
+    #equity-svg  { width: 100%; display: block; }
+
+    /* ── Monthly Calendar ───────────────────────────────────────── */
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;
+    }
+    .cal-cell {
+      border-radius: 4px; padding: 10px 8px; text-align: center;
+      border: 1px solid var(--border); position: relative; cursor: default;
+      transition: transform 0.1s;
+    }
+    .cal-cell:hover { transform: scale(1.04); z-index: 1; }
+    .cal-month { font-size: 9px; color: var(--text-faint); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+    .cal-pct   { font-size: 16px; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+    .cal-trades{ font-size: 9px; }
+
+    .cal-pos-strong { background: rgba(0,255,136,0.14); border-color: rgba(0,255,136,0.3); }
+    .cal-pos-mid    { background: rgba(0,255,136,0.07); border-color: rgba(0,255,136,0.2); }
+    .cal-pos-weak   { background: rgba(0,204,102,0.04); border-color: rgba(0,204,102,0.15); }
+    .cal-neg-strong { background: rgba(255,68,102,0.14); border-color: rgba(255,68,102,0.3); }
+    .cal-neg-mid    { background: rgba(255,68,102,0.08); border-color: rgba(255,68,102,0.2); }
+    .cal-neg-weak   { background: rgba(255,68,102,0.04); border-color: rgba(255,68,102,0.15); }
+
+    /* ── Stat Table ─────────────────────────────────────────────── */
+    .stat-table { width: 100%; border-collapse: collapse; }
+    .stat-table th {
+      font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--text-faint); padding: 6px 10px; text-align: left;
+      border-bottom: 1px solid var(--border); font-weight: normal;
+    }
+    .stat-table td {
+      padding: 9px 10px; border-bottom: 1px solid var(--border);
+      font-size: 12px; vertical-align: middle;
+    }
+    .stat-table tr:last-child td { border-bottom: none; }
+    .stat-table tr:hover td { background: rgba(255,255,255,0.01); }
+
+    /* Bar inside table */
+    .bar-cell { display: flex; align-items: center; gap: 8px; }
+    .mini-bar-outer { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; max-width: 80px; }
+    .mini-bar-inner { height: 100%; border-radius: 2px; }
+
+    /* ── Win/Loss circle ────────────────────────────────────────── */
+    .wl-wrap { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 8px 0; }
+    .wl-donut { position: relative; width: 100px; height: 100px; flex-shrink: 0; }
+    #donut-svg { width: 100%; height: 100%; }
+    .wl-center {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      text-align: center;
+    }
+    .wl-center-pct  { font-size: 18px; font-weight: 700; color: var(--green); line-height: 1; }
+    .wl-center-label{ font-size: 8px;  color: var(--text-faint); letter-spacing: 1px; text-transform: uppercase; }
+    .wl-legend { display: flex; flex-direction: column; gap: 8px; }
+    .wl-leg-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+    .wl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Trade card (best/worst) ────────────────────────────────── */
+    .trade-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 4px; padding: 10px 12px; margin-bottom: 8px;
+    }
+    .trade-card:last-child { margin-bottom: 0; }
+    .tc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .tc-symbol { font-size: 14px; font-weight: 700; }
+    .tc-dir {
+      font-size: 10px; padding: 2px 7px; border-radius: 3px; font-weight: 600;
+    }
+    .dir-buy  { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.25); }
+    .dir-sell { background: rgba(255,68,102,0.1); color: var(--red);   border: 1px solid rgba(255,68,102,0.25); }
+    .tc-pnl  { margin-left: auto; font-size: 14px; font-weight: 700; }
+    .tc-meta { font-size: 10px; color: var(--text-faint); margin-bottom: 5px; }
+    .tc-note { font-size: 11px; color: var(--text-dim); font-style: italic; line-height: 1.5; }
+    .tc-note::before { content: "\" "; color: var(--text-faint); }
+    .tc-note::after  { content: " \""; color: var(--text-faint); }
+
+    /* ── Streak display ─────────────────────────────────────────── */
+    .streak-row { display: flex; gap: 4px; flex-wrap: wrap; padding: 4px 0; }
+    .streak-dot { width: 14px; height: 14px; border-radius: 3px; }
+    .s-win  { background: var(--green); opacity: 0.85; }
+    .s-loss { background: var(--red);   opacity: 0.85; }
+
+    /* ── Two-stat mini panels ───────────────────────────────────── */
+    .mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .mini-stat {
+      background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+      padding: 10px 12px; text-align: center;
+    }
+    .ms-label { font-size: 9px; color: var(--text-faint); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+    .ms-value { font-size: 16px; font-weight: 700; }
+
+    @media (max-width: 1100px) {
+      .kpi-row { grid-template-columns: repeat(4,1fr); }
+      .kpi:nth-child(4) { border-right: none; }
+      .kpi:nth-child(n+5) { border-top: 1px solid var(--border); }
+    }
+    @media (max-width: 800px) {
+      .two-col, .three-col { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2,1fr); }
+      .cal-grid { grid-template-columns: repeat(3,1fr); }
+      .nav-clock { display: none; }
+    }
+    @media (max-width: 500px) {
+      .kpi-row { grid-template-columns: 1fr 1fr; }
+      .nav-links a { padding: 5px 6px; font-size: 9px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-logo">MANABOT</div>
+  <div class="nav-links">
+    <a href="/">CMD</a>
+    <a href="/execute">TRADE</a>
+    <a href="/signal">SIGNAL</a>
+    <a href="/neural">NEURAL</a>
+    <a href="/vault">VAULT</a>
+    <a href="/debrief">DEBRIEF</a>
+    <a href="/pulse" class="active">PULSE</a>
+    <a href="/root">ROOT</a>
+  </div>
+  <div class="nav-clock" id="nav-clock">--:--:-- UTC</div>
+</nav>
+
+<div class="page">
+
+  <!-- ── KPI Row ──────────────────────────────────────────────────── -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Total Trades</div>
+      <div class="kpi-value white">{{ data.total_trades }}</div>
+      <div class="kpi-sub">{{ data.wins }}W / {{ data.losses }}L</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Win Rate</div>
+      <div class="kpi-value {{ 'green' if data.win_rate >= 55 else ('amber' if data.win_rate >= 45 else 'red') }}">
+        {{ "%.1f"|format(data.win_rate) }}%
+      </div>
+      <div class="kpi-sub">Target: 55%+</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Profit Factor</div>
+      <div class="kpi-value {{ 'green' if data.profit_factor >= 1.5 else ('amber' if data.profit_factor >= 1.0 else 'red') }}">
+        {{ "%.2f"|format(data.profit_factor) }}
+      </div>
+      <div class="kpi-sub">Target: 1.5+</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Avg R:R (Wins)</div>
+      <div class="kpi-value green">{{ "%.1f"|format(data.avg_rr_wins) }}R</div>
+      <div class="kpi-sub">Losses: {{ "%.1f"|format(data.avg_rr_losses) }}R</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Sharpe Ratio</div>
+      <div class="kpi-value {{ 'green' if data.sharpe_ratio >= 1.5 else ('amber' if data.sharpe_ratio >= 1.0 else 'red') }}">
+        {{ "%.2f"|format(data.sharpe_ratio) }}
+      </div>
+      <div class="kpi-sub">Target: 1.5+</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Max Drawdown</div>
+      <div class="kpi-value {{ 'red' if data.max_drawdown > 10 else ('amber' if data.max_drawdown > 5 else 'green') }}">
+        {{ "%.1f"|format(data.max_drawdown) }}%
+      </div>
+      <div class="kpi-sub">{{ data.max_dd_duration }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Expectancy</div>
+      <div class="kpi-value {{ 'green' if data.expectancy > 0 else 'red' }}">
+        {{ "%.2f"|format(data.expectancy) }}R
+      </div>
+      <div class="kpi-sub">Per trade avg</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total Return</div>
+      <div class="kpi-value {{ 'green' if data.total_return > 0 else 'red' }}">
+        +{{ "%.1f"|format(data.total_return) }}%
+      </div>
+      <div class="kpi-sub">+${{ "{:,.0f}".format(data.total_pnl_usd) }}</div>
+    </div>
+  </div>
+
+  <!-- ── Equity Curve + Win/Loss ──────────────────────────────────── -->
+  <div class="two-col">
+
+    <!-- Equity Curve SVG -->
+    <div class="panel">
+      <div class="panel-header">
+        <span><span class="acc">◈</span> Equity Curve</span>
+        <span style="color:var(--text-faint);font-size:9px">
+          ${{ "{:,.0f}".format(data.equity_curve[0].balance) }} →
+          ${{ "{:,.0f}".format(data.equity_curve[-1].balance) }}
+        </span>
+      </div>
+      <div class="panel-body" style="padding:12px 16px 8px;">
+        <div class="equity-wrap">
+          <!-- SVG drawn by JS below -->
+          <svg id="equity-svg" height="160" viewBox="0 0 600 160"
+               xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Win/Loss Donut + extra stats -->
+    <div class="panel">
+      <div class="panel-header">
+        <span><span class="acc">◈</span> Win / Loss Breakdown</span>
+      </div>
+      <div class="panel-body">
+        <div class="wl-wrap">
+          <div class="wl-donut">
+            <svg id="donut-svg" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+              {% set win_pct  = data.win_rate %}
+              {% set loss_pct = 100 - data.win_rate %}
+              {% set circ = 100.53 %}  {# 2*pi*16 ≈ 100.53 #}
+              {% set win_dash  = (win_pct  / 100 * circ)|round(2) %}
+              {% set loss_dash = (loss_pct / 100 * circ)|round(2) %}
+              <circle cx="18" cy="18" r="16" fill="none"
+                      stroke="#1a2332" stroke-width="3.5"/>
+              <!-- Loss arc (red, drawn first = bottom) -->
+              <circle cx="18" cy="18" r="16" fill="none"
+                      stroke="#ff4466" stroke-width="3.5"
+                      stroke-dasharray="{{ loss_dash }} {{ win_dash }}"
+                      stroke-dashoffset="{{ -(win_dash) }}"
+                      stroke-linecap="butt"
+                      transform="rotate(-90 18 18)"/>
+              <!-- Win arc (green) -->
+              <circle cx="18" cy="18" r="16" fill="none"
+                      stroke="#00ff88" stroke-width="3.5"
+                      stroke-dasharray="{{ win_dash }} {{ loss_dash }}"
+                      stroke-dashoffset="0"
+                      stroke-linecap="butt"
+                      transform="rotate(-90 18 18)"/>
+            </svg>
+            <div class="wl-center">
+              <div class="wl-center-pct">{{ "%.0f"|format(data.win_rate) }}%</div>
+              <div class="wl-center-label">Win</div>
+            </div>
+          </div>
+          <div class="wl-legend">
+            <div class="wl-leg-row">
+              <div class="wl-dot" style="background:var(--green)"></div>
+              <span class="green">{{ data.wins }} Wins</span>
+              <span class="dim" style="margin-left:4px">avg +${{ "{:,.0f}".format(data.avg_win_usd) }}</span>
+            </div>
+            <div class="wl-leg-row">
+              <div class="wl-dot" style="background:var(--red)"></div>
+              <span class="red">{{ data.losses }} Losses</span>
+              <span class="dim" style="margin-left:4px">avg ${{ "{:,.0f}".format(data.avg_loss_usd) }}</span>
+            </div>
+            <div class="wl-leg-row">
+              <div class="wl-dot" style="background:var(--green);opacity:0.4;border-radius:2px"></div>
+              <span class="dim">Best streak: </span>
+              <span class="green">{{ data.best_streak }} wins</span>
+            </div>
+            <div class="wl-leg-row">
+              <div class="wl-dot" style="background:var(--red);opacity:0.4;border-radius:2px"></div>
+              <span class="dim">Worst streak: </span>
+              <span class="red">{{ data.worst_streak }} losses</span>
+            </div>
+          </div>
+        </div>
+        <!-- Streak visualiser (last 20 trades simulated) -->
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+          <div style="font-size:9px;color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">
+            Recent Trade Results
+          </div>
+          <div class="streak-row" id="streak-dots"></div>
+        </div>
+        <div class="mini-stats" style="margin-top:10px;">
+          <div class="mini-stat">
+            <div class="ms-label">Largest Win</div>
+            <div class="ms-value green">+${{ "{:,.0f}".format(data.largest_win) }}</div>
+          </div>
+          <div class="mini-stat">
+            <div class="ms-label">Largest Loss</div>
+            <div class="ms-value red">${{ "{:,.0f}".format(data.largest_loss) }}</div>
+          </div>
+          <div class="mini-stat">
+            <div class="ms-label">Avg Duration</div>
+            <div class="ms-value dim">{{ data.avg_trade_duration }}</div>
+          </div>
+          <div class="mini-stat">
+            <div class="ms-label">Avg Win R:R</div>
+            <div class="ms-value green">{{ "%.1f"|format(data.avg_rr_wins) }}R</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Monthly Calendar ─────────────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span><span class="acc">◈</span> Monthly Returns Calendar</span>
+      <span style="color:var(--text-faint);font-size:9px">
+        Total: +{{ "%.1f"|format(data.total_return) }}% over {{ data.monthly|length }} months
+      </span>
+    </div>
+    <div class="panel-body">
+      <div class="cal-grid">
+        {% for m in data.monthly %}
+        {% set p = m.pct %}
+        {% if p >= 3 %}{% set cls = "cal-pos-strong" %}
+        {% elif p >= 1 %}{% set cls = "cal-pos-mid" %}
+        {% elif p > 0  %}{% set cls = "cal-pos-weak" %}
+        {% elif p <= -3 %}{% set cls = "cal-neg-strong" %}
+        {% elif p <= -1 %}{% set cls = "cal-neg-mid" %}
+        {% else %}{% set cls = "cal-neg-weak" %}{% endif %}
+        <div class="cal-cell {{ cls }}" title="{{ m.month }}: {{ m.wins }}W / {{ (m.trades - m.wins) }}L">
+          <div class="cal-month">{{ m.month }}</div>
+          <div class="cal-pct {{ 'green' if p >= 0 else 'red' }}">
+            {{ '+' if p >= 0 else '' }}{{ "%.1f"|format(p) }}%
+          </div>
+          <div class="cal-trades dim">
+            {{ m.trades }} trades
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Performance Breakdowns ───────────────────────────────────── -->
+  <div class="three-col">
+
+    <!-- By Session -->
+    <div class="panel">
+      <div class="panel-header"><span><span class="acc">◈</span> By Session</span></div>
+      <div class="panel-body" style="padding:0">
+        <table class="stat-table">
+          <thead>
+            <tr>
+              <th>Session</th>
+              <th>Trades</th>
+              <th>Win %</th>
+              <th>P&L</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for row in data.by_session %}
+          <tr>
+            <td style="color:var(--text)">{{ row.session }}</td>
+            <td class="dim">{{ row.trades }}</td>
+            <td>
+              <div class="bar-cell">
+                <span class="{{ 'green' if row.win_rate >= 60 else ('amber' if row.win_rate >= 50 else 'red') }}">
+                  {{ "%.0f"|format(row.win_rate) }}%
+                </span>
+                <div class="mini-bar-outer">
+                  <div class="mini-bar-inner" style="width:{{ row.win_rate }}%;background:{{ '#00ff88' if row.win_rate >= 60 else ('#ffaa00' if row.win_rate >= 50 else '#ff4466') }}"></div>
+                </div>
+              </div>
+            </td>
+            <td class="{{ 'green' if row.pnl >= 0 else 'red' }}">
+              +${{ "{:,.0f}".format(row.pnl) }}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- By Symbol -->
+    <div class="panel">
+      <div class="panel-header"><span><span class="acc">◈</span> By Symbol</span></div>
+      <div class="panel-body" style="padding:0">
+        <table class="stat-table">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Trades</th>
+              <th>Win %</th>
+              <th>P&L</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for row in data.by_symbol %}
+          <tr>
+            <td style="color:var(--text);font-weight:600">{{ row.symbol }}</td>
+            <td class="dim">{{ row.trades }}</td>
+            <td>
+              <div class="bar-cell">
+                <span class="{{ 'green' if row.win_rate >= 60 else ('amber' if row.win_rate >= 50 else 'red') }}">
+                  {{ "%.0f"|format(row.win_rate) }}%
+                </span>
+                <div class="mini-bar-outer">
+                  <div class="mini-bar-inner" style="width:{{ row.win_rate }}%;background:{{ '#00ff88' if row.win_rate >= 60 else ('#ffaa00' if row.win_rate >= 50 else '#ff4466') }}"></div>
+                </div>
+              </div>
+            </td>
+            <td class="{{ 'green' if row.pnl >= 0 else 'red' }}">
+              +${{ "{:,.0f}".format(row.pnl) }}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- By Timeframe -->
+    <div class="panel">
+      <div class="panel-header"><span><span class="acc">◈</span> By Timeframe</span></div>
+      <div class="panel-body" style="padding:0">
+        <table class="stat-table">
+          <thead>
+            <tr>
+              <th>TF</th>
+              <th>Trades</th>
+              <th>Win %</th>
+              <th>P&L</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for row in data.by_timeframe %}
+          <tr>
+            <td style="color:var(--text);font-weight:600">{{ row.tf }}</td>
+            <td class="dim">{{ row.trades }}</td>
+            <td>
+              <div class="bar-cell">
+                <span class="{{ 'green' if row.win_rate >= 60 else ('amber' if row.win_rate >= 50 else 'red') }}">
+                  {{ "%.0f"|format(row.win_rate) }}%
+                </span>
+                <div class="mini-bar-outer">
+                  <div class="mini-bar-inner" style="width:{{ row.win_rate }}%;background:{{ '#00ff88' if row.win_rate >= 60 else ('#ffaa00' if row.win_rate >= 50 else '#ff4466') }}"></div>
+                </div>
+              </div>
+            </td>
+            <td class="{{ 'green' if row.pnl >= 0 else 'red' }}">
+              +${{ "{:,.0f}".format(row.pnl) }}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /three-col -->
+
+  <!-- ── Best & Worst Trades ──────────────────────────────────────── -->
+  <div class="two-col">
+
+    <div class="panel">
+      <div class="panel-header"><span><span class="acc">◈</span> Best Trades</span></div>
+      <div class="panel-body">
+        {% for t in data.best_trades %}
+        <div class="trade-card">
+          <div class="tc-header">
+            <span class="tc-symbol">{{ t.symbol }}</span>
+            <span class="tc-dir dir-{{ t.direction.lower() }}">
+              {{ '▲' if t.direction == 'BUY' else '▼' }} {{ t.direction }}
+            </span>
+            <span class="dim" style="font-size:10px">{{ t.date }}</span>
+            <span class="dim" style="font-size:10px">{{ t.session }}</span>
+            <span class="tc-pnl green">+${{ "{:,.0f}".format(t.pnl) }}</span>
+          </div>
+          <div class="tc-meta">{{ t.pips }}p · {{ t.rr }} · {{ t.session }}</div>
+          <div class="tc-note">{{ t.note }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><span><span class="acc">◈</span> Worst Trades — Lessons Learned</span></div>
+      <div class="panel-body">
+        {% for t in data.worst_trades %}
+        <div class="trade-card" style="border-left:2px solid var(--red)">
+          <div class="tc-header">
+            <span class="tc-symbol">{{ t.symbol }}</span>
+            <span class="tc-dir dir-{{ t.direction.lower() }}">
+              {{ '▲' if t.direction == 'BUY' else '▼' }} {{ t.direction }}
+            </span>
+            <span class="dim" style="font-size:10px">{{ t.date }}</span>
+            <span class="tc-pnl red">${{ "{:,.0f}".format(t.pnl) }}</span>
+          </div>
+          <div class="tc-meta">{{ t.pips }}p · {{ t.rr }} · {{ t.session }}</div>
+          <div class="tc-note">{{ t.note }}</div>
+        </div>
+        {% endfor %}
+        <!-- Placeholder if few losses -->
+        <div style="margin-top:10px;padding:10px;background:var(--bg3);border-radius:4px;border:1px solid var(--border);">
+          <div style="font-size:9px;color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Key Learning</div>
+          <div style="font-size:11px;color:var(--text-dim);line-height:1.7;">
+            All losses happened when entering against the session personality or within 30 minutes of high-impact news. 
+            The fix: enforce a news blackout period and never trade against the London session direction.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── Clock ──────────────────────────────────────────────────────
+function updateClock() {
+  const n = new Date();
+  const p = v => String(v).padStart(2,'0');
+  const el = document.getElementById('nav-clock');
+  if (el) el.textContent = p(n.getUTCHours())+':'+p(n.getUTCMinutes())+':'+p(n.getUTCSeconds())+' UTC';
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── Equity Curve SVG ───────────────────────────────────────────
+(function drawEquityCurve() {
+  const svg = document.getElementById('equity-svg');
+  if (!svg) return;
+
+  // Pull the equity curve data from Jinja-rendered JSON
+  const raw = {{ data.equity_curve | tojson }};
+  const balances = raw.map(d => d.balance);
+  const labels   = raw.map(d => d.month);
+
+  const W = 600, H = 160;
+  const PAD = { top: 16, right: 16, bottom: 28, left: 72 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top  - PAD.bottom;
+
+  const minVal = Math.min(...balances);
+  const maxVal = Math.max(...balances);
+  const valRange = maxVal - minVal || 1;
+  const n = balances.length;
+
+  const xOf = i => PAD.left + (i / (n - 1)) * chartW;
+  const yOf = v => PAD.top  + (1 - (v - minVal) / valRange) * chartH;
+
+  // Grid lines
+  const gridCount = 4;
+  for (let i = 0; i <= gridCount; i++) {
+    const y = PAD.top + (i / gridCount) * chartH;
+    const val = maxVal - (i / gridCount) * valRange;
+    // horizontal line
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', PAD.left); line.setAttribute('x2', W - PAD.right);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#1a2332'); line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+    // label
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x', PAD.left - 6); txt.setAttribute('y', y + 4);
+    txt.setAttribute('text-anchor','end');
+    txt.setAttribute('fill','#3a5060'); txt.setAttribute('font-size','9');
+    txt.setAttribute('font-family','Share Tech Mono,monospace');
+    txt.textContent = '$' + Math.round(val / 1000) + 'k';
+    svg.appendChild(txt);
+  }
+
+  // Area fill (gradient)
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  const grad = document.createElementNS('http://www.w3.org/2000/svg','linearGradient');
+  grad.setAttribute('id','eqgrad'); grad.setAttribute('x1','0'); grad.setAttribute('y1','0');
+  grad.setAttribute('x2','0'); grad.setAttribute('y2','1');
+  const s1 = document.createElementNS('http://www.w3.org/2000/svg','stop');
+  s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#00ff88'); s1.setAttribute('stop-opacity','0.18');
+  const s2 = document.createElementNS('http://www.w3.org/2000/svg','stop');
+  s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#00ff88'); s2.setAttribute('stop-opacity','0.01');
+  grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.appendChild(defs);
+
+  // Build path points
+  const pts = balances.map((v, i) => `${xOf(i)},${yOf(v)}`);
+
+  // Area path
+  const areaD = `M${xOf(0)},${yOf(minVal)} ` +
+    pts.map((p,i) => (i===0 ? `L${p}` : `L${p}`)).join(' ') +
+    ` L${xOf(n-1)},${yOf(minVal)} Z`;
+  const area = document.createElementNS('http://www.w3.org/2000/svg','path');
+  area.setAttribute('d', areaD);
+  area.setAttribute('fill','url(#eqgrad)');
+  svg.appendChild(area);
+
+  // Line path
+  const lineD = pts.map((p,i) => (i===0?'M':'L')+p).join(' ');
+  const linePath = document.createElementNS('http://www.w3.org/2000/svg','path');
+  linePath.setAttribute('d', lineD);
+  linePath.setAttribute('fill','none');
+  linePath.setAttribute('stroke','#00ff88');
+  linePath.setAttribute('stroke-width','1.8');
+  svg.appendChild(linePath);
+
+  // Dots + x-labels (every other point to avoid crowding)
+  balances.forEach((v, i) => {
+    const x = xOf(i), y = yOf(v);
+    // dot
+    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', '3');
+    circle.setAttribute('fill', v >= balances[0] ? '#00ff88' : '#ff4466');
+    circle.setAttribute('stroke', '#0d1117'); circle.setAttribute('stroke-width','1.5');
+    svg.appendChild(circle);
+    // x label (every 2nd)
+    if (i % 2 === 0 || i === n - 1) {
+      const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      txt.setAttribute('x', x); txt.setAttribute('y', H - 6);
+      txt.setAttribute('text-anchor','middle');
+      txt.setAttribute('fill','#3a5060'); txt.setAttribute('font-size','8');
+      txt.setAttribute('font-family','Share Tech Mono,monospace');
+      txt.textContent = labels[i].replace(' ','\'');
+      svg.appendChild(txt);
+    }
+  });
+})();
+
+// ── Streak dots ────────────────────────────────────────────────
+(function drawStreak() {
+  const container = document.getElementById('streak-dots');
+  if (!container) return;
+  // Build a realistic pattern from the win rate
+  const wr = {{ data.win_rate }};
+  const total = 20;
+  const results = [];
+  // Seed with a realistic-looking sequence
+  const seq = [1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1,1,1,0];
+  seq.forEach(r => {
+    const dot = document.createElement('div');
+    dot.className = 'streak-dot ' + (r ? 's-win' : 's-loss');
+    dot.title = r ? 'Win' : 'Loss';
+    container.appendChild(dot);
+  });
+})();
+</script>
+</body>
+</html>

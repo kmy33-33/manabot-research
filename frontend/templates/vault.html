@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAULT — ManaBot</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg:        #080b0f;
+    --panel:     #0d1117;
+    --border:    #1a2332;
+    --green:     #00ff88;
+    --green-dim: #00cc6a;
+    --green-glow:#00ff8822;
+    --amber:     #ffb300;
+    --red:       #ff3b5c;
+    --blue:      #00aaff;
+    --purple:    #cc88ff;
+    --text:      #c8d8e8;
+    --text-dim:  #5a7a8a;
+    --mono:      'Share Tech Mono', monospace;
+    --sans:      'Rajdhani', sans-serif;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Nav */
+  nav {
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    height: 48px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    flex-shrink: 0;
+    gap: 4px;
+  }
+  .logo {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--green);
+    letter-spacing: 3px;
+    margin-right: 24px;
+  }
+  nav a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    padding: 6px 12px;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+  nav a:hover  { color: var(--text); background: var(--border); }
+  nav a.active { color: var(--purple); border-bottom: 2px solid var(--purple); }
+  .nav-status {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--green-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+  /* Layout */
+  .page {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    flex: 1;
+    overflow: hidden;
+    height: calc(100vh - 48px);
+  }
+
+  /* Left: Import panel */
+  .import-panel {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .panel-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-header span { color: var(--purple); }
+
+  /* Source type tabs */
+  .type-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .type-tab {
+    flex: 1;
+    padding: 10px 4px;
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .type-tab:hover { color: var(--text); }
+  .type-tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+
+  /* Import form */
+  .import-form {
+    padding: 20px;
+    flex-shrink: 0;
+  }
+  .form-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .form-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 10px 14px;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 12px;
+  }
+  .form-input:focus { border-color: var(--purple); }
+  .form-input::placeholder { color: var(--text-dim); }
+  textarea.form-input {
+    resize: vertical;
+    min-height: 80px;
+    max-height: 200px;
+    line-height: 1.5;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .import-btn {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 2px;
+    padding: 12px;
+    background: var(--purple);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+  .import-btn:hover    { opacity: 0.85; }
+  .import-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Progress / status */
+  .import-status {
+    margin: 0 20px 16px;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 11px;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .import-status.processing {
+    display: block;
+    background: #0d1a33;
+    border: 1px solid var(--blue);
+    color: var(--blue);
+  }
+  .import-status.success {
+    display: block;
+    background: #0a1a0d;
+    border: 1px solid var(--green);
+    color: var(--green);
+  }
+  .import-status.error {
+    display: block;
+    background: #1a0d0d;
+    border: 1px solid var(--red);
+    color: var(--red);
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+
+  /* What ManaBot can learn section */
+  .learn-section {
+    padding: 0 20px 20px;
+    flex: 1;
+  }
+  .learn-title {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+  .learn-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 11px;
+  }
+  .learn-icon { color: var(--purple); flex-shrink: 0; }
+  .learn-text { color: var(--text-dim); line-height: 1.5; }
+  .learn-text strong { color: var(--text); }
+
+  /* Right: Knowledge library */
+  .library-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .library-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .lib-title {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+  }
+  .lib-count { color: var(--purple); }
+  .lib-stats {
+    display: flex;
+    gap: 20px;
+    font-size: 10px;
+  }
+  .lib-stat { color: var(--text-dim); }
+  .lib-stat span { color: var(--text); }
+
+  .library-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .library-list::-webkit-scrollbar { width: 3px; }
+  .library-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* Knowledge card */
+  .knowledge-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+    animation: cardIn 0.3s ease;
+  }
+  .knowledge-card:hover { border-color: #2a3a4a; }
+  @keyframes cardIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  .card-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .card-left { flex: 1; min-width: 0; }
+  .card-name {
+    font-size: 13px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .card-type {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .type-youtube  { background:#1a0000;color:#ff4444; }
+  .type-pdf      { background:#1a0d00;color:var(--amber); }
+  .type-text     { background:#0d0d1a;color:var(--blue); }
+  .type-article  { background:#001a1a;color:#00ffcc; }
+  .type-book     { background:#0d1a00;color:var(--green); }
+
+  .card-status {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+  .status-live        { background:#001a0d;color:var(--green); }
+  .status-processing  { background:#001033;color:var(--blue); }
+  .status-backtesting { background:#1a1000;color:var(--amber); }
+
+  .card-date { font-size: 9px; color: var(--text-dim); }
+
+  .card-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .rules-badge {
+    font-size: 11px;
+    color: var(--purple);
+    white-space: nowrap;
+  }
+
+  /* Expanded card body */
+  .card-body {
+    border-top: 1px solid var(--border);
+    padding: 14px 16px;
+    display: none;
+  }
+  .card-body.open { display: block; }
+
+  .card-summary {
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    background: #060d0a;
+    border: 1px solid #1a3322;
+    border-radius: 4px;
+  }
+
+  .card-section-title {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    margin-top: 14px;
+  }
+  .card-section-title:first-child { margin-top: 0; }
+
+  .rules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .rule-item {
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.5;
+    padding: 8px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    border-left: 2px solid var(--purple);
+  }
+  .rule-item::before { content: '→ '; color: var(--purple); }
+
+  .markets-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .market-tag {
+    font-size: 9px;
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--green);
+    letter-spacing: 1px;
+  }
+
+  .concepts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .concept-item {
+    font-size: 10px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .concept-name { color: var(--amber); margin-bottom: 2px; }
+  .concept-desc { color: var(--text-dim); font-size: 9px; line-height: 1.4; }
+
+  .insights-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .insight-item {
+    font-size: 10px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    padding: 6px 10px;
+    border-left: 1px solid var(--border);
+  }
+  .insight-item::before { content: '◆ '; color: var(--blue); font-size: 8px; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 40px;
+    color: var(--text-dim);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-text { font-size: 12px; line-height: 1.8; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border);border-radius:2px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">MANABOT</div>
+  <a href="/">CMD</a>
+  <a href="/execute">TRADE</a>
+  <a href="/signal">SIGNAL</a>
+  <a href="/neural">NEURAL</a>
+  <a href="/vault" class="active">VAULT</a>
+  <a href="/debrief">DEBRIEF</a>
+  <a href="/pulse">PULSE</a>
+  <a href="/root">ROOT</a>
+  <div class="nav-status">
+    <div class="dot"></div>
+    <span id="sessionLabel">LOADING...</span>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- Left: Import -->
+  <div class="import-panel">
+    <div class="panel-header">
+      KNOWLEDGE IMPORT
+      <span>VAULT</span>
+    </div>
+
+    <!-- Source type selector -->
+    <div class="type-tabs">
+      <div class="type-tab active" onclick="selectType('youtube')" id="tab-youtube">▶ YOUTUBE</div>
+      <div class="type-tab" onclick="selectType('pdf')"     id="tab-pdf">📄 PDF</div>
+      <div class="type-tab" onclick="selectType('text')"    id="tab-text">✏ TEXT</div>
+      <div class="type-tab" onclick="selectType('article')" id="tab-article">🌐 URL</div>
+    </div>
+
+    <!-- Forms -->
+    <div class="import-form">
+
+      <!-- YouTube form -->
+      <div id="form-youtube">
+        <label class="form-label">YOUTUBE URL</label>
+        <input type="text" class="form-input" id="yt-url"
+               placeholder="https://youtube.com/watch?v=...">
+        <label class="form-label">NAME (OPTIONAL)</label>
+        <input type="text" class="form-input" id="yt-name"
+               placeholder="e.g. ICT Mentorship EP.1">
+        <button class="import-btn" onclick="doImport('youtube')">
+          EXTRACT & LEARN
+        </button>
+      </div>
+
+      <!-- PDF form -->
+      <div id="form-pdf" style="display:none">
+        <label class="form-label">PDF FILE PATH</label>
+        <input type="text" class="form-input" id="pdf-path"
+               placeholder="C:\Users\kmahn\Downloads\book.pdf">
+        <label class="form-label">NAME</label>
+        <input type="text" class="form-input" id="pdf-name"
+               placeholder="e.g. Wyckoff Method PDF">
+        <button class="import-btn" onclick="doImport('pdf')">
+          EXTRACT & LEARN
+        </button>
+      </div>
+
+      <!-- Text form -->
+      <div id="form-text" style="display:none">
+        <label class="form-label">PASTE ANY CONTENT</label>
+        <textarea class="form-input" id="text-content"
+                  placeholder="Paste anything — trading notes, book excerpts, Reddit posts, podcast transcripts, personal observations, economics articles, psychology insights..."></textarea>
+        <label class="form-label">NAME THIS SOURCE</label>
+        <input type="text" class="form-input" id="text-name"
+               placeholder="e.g. My Trading Notes May 2025">
+        <button class="import-btn" onclick="doImport('text')">
+          EXTRACT & LEARN
+        </button>
+      </div>
+
+      <!-- Article/URL form -->
+      <div id="form-article" style="display:none">
+        <label class="form-label">ARTICLE / WEB URL</label>
+        <input type="text" class="form-input" id="art-url"
+               placeholder="https://...">
+        <label class="form-label">NAME</label>
+        <input type="text" class="form-input" id="art-name"
+               placeholder="e.g. FT Article on Fed Policy">
+        <button class="import-btn" onclick="doImport('article')">
+          EXTRACT & LEARN
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Status message -->
+    <div class="import-status" id="importStatus"></div>
+
+    <!-- What ManaBot learns -->
+    <div class="learn-section">
+      <div class="learn-title">WHAT MANABOT LEARNS FROM</div>
+      <div class="learn-item">
+        <span class="learn-icon">▶</span>
+        <span class="learn-text"><strong>Trading videos</strong> — specific setups, entry rules, confluences, session timing</span>
+      </div>
+      <div class="learn-item">
+        <span class="learn-icon">📊</span>
+        <span class="learn-text"><strong>Economics articles</strong> — how interest rates, inflation, and policy move currency pairs</span>
+      </div>
+      <div class="learn-item">
+        <span class="learn-icon">🧠</span>
+        <span class="learn-text"><strong>Psychology books</strong> — how fear and greed create predictable retail patterns to trade against</span>
+      </div>
+      <div class="learn-item">
+        <span class="learn-icon">📜</span>
+        <span class="learn-text"><strong>Market history</strong> — how markets behaved in crashes, wars, pandemics, rate cycles</span>
+      </div>
+      <div class="learn-item">
+        <span class="learn-icon">📰</span>
+        <span class="learn-text"><strong>News &amp; geopolitics</strong> — which events move which currencies and why</span>
+      </div>
+      <div class="learn-item">
+        <span class="learn-icon">✏</span>
+        <span class="learn-text"><strong>Your own notes</strong> — personal observations from your trading journal</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Knowledge library -->
+  <div class="library-panel">
+    <div class="library-header">
+      <div class="lib-title">
+        LEARNING LIBRARY &nbsp;
+        <span class="lib-count" id="libCount">0 items</span>
+      </div>
+      <div class="lib-stats">
+        <div class="lib-stat">Rules: <span id="totalRules">0</span></div>
+        <div class="lib-stat">Sources: <span id="totalSources">0</span></div>
+      </div>
+    </div>
+
+    <div class="library-list" id="libraryList">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📚</div>
+        <div class="empty-text">
+          The Vault is empty.<br><br>
+          Import a YouTube video, PDF, or paste any text<br>
+          and ManaBot will extract every actionable insight.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let currentType = 'youtube';
+
+  // ── Session label ─────────────────────────────────────────────
+  const h = new Date().getUTCHours();
+  document.getElementById('sessionLabel').textContent =
+    h<7?'ASIAN SESSION':h<12?'LONDON KILLZONE':h<15?'NY OVERLAP ⚡':h<20?'NEW YORK SESSION':'LATE NY';
+
+  // ── Tab switching ─────────────────────────────────────────────
+  function selectType(type) {
+    currentType = type;
+    ['youtube','pdf','text','article'].forEach(t => {
+      document.getElementById('tab-'+t).classList.toggle('active', t===type);
+      document.getElementById('form-'+t).style.display = t===type ? 'block' : 'none';
+    });
+  }
+
+  // ── Import ────────────────────────────────────────────────────
+  async function doImport(type) {
+    let url='', name='', text='';
+
+    if (type==='youtube') {
+      url  = document.getElementById('yt-url').value.trim();
+      name = document.getElementById('yt-name').value.trim() || url;
+      if (!url) { showStatus('error','Please enter a YouTube URL.'); return; }
+    } else if (type==='pdf') {
+      url  = document.getElementById('pdf-path').value.trim();
+      name = document.getElementById('pdf-name').value.trim() || url;
+      if (!url) { showStatus('error','Please enter the PDF file path.'); return; }
+    } else if (type==='text') {
+      text = document.getElementById('text-content').value.trim();
+      name = document.getElementById('text-name').value.trim() || 'Pasted Content';
+      if (!text) { showStatus('error','Please paste some content.'); return; }
+    } else if (type==='article') {
+      url  = document.getElementById('art-url').value.trim();
+      name = document.getElementById('art-name').value.trim() || url;
+      if (!url) { showStatus('error','Please enter a URL.'); return; }
+    }
+
+    showStatus('processing',
+      '⟳ ManaBot is reading and analysing this content...<br>' +
+      'This takes 15-30 seconds. The library will update automatically.'
+    );
+
+    try {
+      const body = { type, name };
+      if (text) { body.text = text; }
+      else       { body.url  = url;  }
+
+      const r = await fetch('/api/vault/import', {
+        method:  'POST',
+        headers: {'Content-Type':'application/json'},
+        body:    JSON.stringify(body)
+      });
+      const data = await r.json();
+
+      if (data.error) {
+        showStatus('error', '✗ ' + data.error);
+      } else {
+        showStatus('success',
+          '✓ Import queued — ManaBot is extracting knowledge.<br>' +
+          'The library will update in 15-30 seconds.'
+        );
+        // Auto-refresh library after delay
+        setTimeout(loadLibrary, 8000);
+        setTimeout(loadLibrary, 20000);
+        setTimeout(loadLibrary, 35000);
+      }
+    } catch(e) {
+      showStatus('error', '✗ Connection error. Is ManaBot running?');
+    }
+  }
+
+  function showStatus(type, msg) {
+    const el = document.getElementById('importStatus');
+    el.className = 'import-status ' + type;
+    el.innerHTML = msg;
+  }
+
+  // ── Load library ──────────────────────────────────────────────
+  async function loadLibrary() {
+    try {
+      const r = await fetch('/api/vault/items');
+      const items = await r.json();
+
+      const list = document.getElementById('libraryList');
+      const empty = document.getElementById('emptyState');
+
+      if (!items || items.length === 0) {
+        empty.style.display = 'block';
+        document.getElementById('libCount').textContent = '0 items';
+        return;
+      }
+
+      empty.style.display = 'none';
+      document.getElementById('libCount').textContent = items.length + ' items';
+
+      let totalRules = 0;
+      items.forEach(item => {
+        const r = parseInt(item.rules_found) || 0;
+        totalRules += r;
+      });
+      document.getElementById('totalRules').textContent = totalRules;
+      document.getElementById('totalSources').textContent = items.length;
+
+      list.innerHTML = '';
+      items.forEach(item => {
+        list.appendChild(buildCard(item));
+      });
+    } catch(e) {}
+  }
+
+  function buildCard(item) {
+    const card = document.createElement('div');
+    card.className = 'knowledge-card';
+
+    const typeClass = 'type-' + (item.source_type||'text').toLowerCase();
+    const statusClass = 'status-' + (item.status||'live').toLowerCase().replace(' ','-');
+    const rules = item.rules_found || 0;
+    const date  = item.created_at
+      ? new Date(item.created_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'})
+      : '';
+
+    // Parse analysis JSON
+    let analysis = null;
+    if (item.analysis_json) {
+      try { analysis = JSON.parse(item.analysis_json); } catch(e) {}
+    }
+
+    const summary   = analysis?.summary  || item.notes || 'Processing...';
+    const rulesArr  = analysis?.rules     || [];
+    const markets   = analysis?.markets   || [];
+    const concepts  = analysis?.concepts  || [];
+    const mktConn   = analysis?.market_connections || [];
+    const psycho    = analysis?.psychological_insights || [];
+    const macro     = analysis?.macro_insights || [];
+    const entries   = analysis?.entry_conditions || [];
+    const sessions  = analysis?.session_notes || [];
+
+    // Build markets tags
+    const marketTags = markets.map(m =>
+      `<span class="market-tag">${m}</span>`
+    ).join('');
+
+    // Build rules list (show first 5)
+    const rulesHtml = rulesArr.slice(0,6).map(r =>
+      `<div class="rule-item">${r}</div>`
+    ).join('');
+
+    // Build concepts grid
+    const conceptsHtml = concepts.slice(0,4).map(c =>
+      `<div class="concept-item">
+        <div class="concept-name">${c.name||''}</div>
+        <div class="concept-desc">${c.explanation||''}</div>
+      </div>`
+    ).join('');
+
+    // Build insights
+    const allInsights = [...mktConn, ...psycho, ...macro, ...entries, ...sessions];
+    const insightsHtml = allInsights.slice(0,5).map(i =>
+      `<div class="insight-item">${i}</div>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="card-left">
+          <div class="card-name">${item.source_name || 'Unknown Source'}</div>
+          <div class="card-meta">
+            <span class="card-type ${typeClass}">${item.source_type||'TEXT'}</span>
+            <span class="card-status ${statusClass}">${item.status||'LIVE'}</span>
+            <span class="card-date">${date}</span>
+          </div>
+        </div>
+        <div class="card-right">
+          <div class="rules-badge">${rules} rules</div>
+          ${markets.length ? `<div style="font-size:9px;color:var(--text-dim)">${markets.slice(0,3).join(' · ')}</div>` : ''}
+        </div>
+      </div>
+      <div class="card-body">
+        ${summary ? `
+          <div class="card-section-title">WHAT MANABOT LEARNED</div>
+          <div class="card-summary">${summary}</div>
+        ` : ''}
+
+        ${rulesHtml ? `
+          <div class="card-section-title">ACTIONABLE RULES EXTRACTED</div>
+          <div class="rules-list">${rulesHtml}</div>
+          ${rulesArr.length > 6 ? `<div style="font-size:9px;color:var(--text-dim);margin-top:6px;padding-left:12px">+${rulesArr.length-6} more rules stored</div>` : ''}
+        ` : ''}
+
+        ${markets.length ? `
+          <div class="card-section-title">APPLIES TO</div>
+          <div class="markets-row">${marketTags}</div>
+        ` : ''}
+
+        ${conceptsHtml ? `
+          <div class="card-section-title">KEY CONCEPTS</div>
+          <div class="concepts-grid">${conceptsHtml}</div>
+        ` : ''}
+
+        ${insightsHtml ? `
+          <div class="card-section-title">MARKET CONNECTIONS</div>
+          <div class="insights-list">${insightsHtml}</div>
+        ` : ''}
+      </div>
+    `;
+
+    return card;
+  }
+
+  function toggleCard(header) {
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+  }
+
+  // ── Init ──────────────────────────────────────────────────────
+  loadLibrary();
+  setInterval(loadLibrary, 30000);
+</script>
+</body>
+</html>
